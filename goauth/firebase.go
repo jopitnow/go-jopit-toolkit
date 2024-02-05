@@ -88,6 +88,7 @@ func AuthWithFirebase() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if header == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, fmt.Errorf("missing Authorization Header"))
 			return
 		}
 
@@ -154,12 +155,12 @@ func CheckFirebaseCredentials() error {
 	return nil
 }
 
-func GetUserId(c *gin.Context) string {
+func GetUserId(c *gin.Context) (string, error) {
 	userID, exist := c.Get("user_id")
 	if !exist {
-		return ""
+		return "", fmt.Errorf("user_id is empty")
 	}
-	return userID.(string)
+	return userID.(string), nil
 }
 
 func MockAuthWithFirebase() gin.HandlerFunc {
