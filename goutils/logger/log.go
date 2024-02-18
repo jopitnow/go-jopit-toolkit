@@ -72,7 +72,7 @@ func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 	r.Values["request_body_size"] = strconv.Itoa(int(c.Request.ContentLength))
 	r.Values["request_url"] = c.Request.RequestURI
 	r.Values["request_x_trace_id"] = c.Request.Header.Get("X-Trace-ID")
-	r.Values["request_x_request_id"] = c.Request.Header.Get("X-Trace-ID")
+	r.Values["request_x_request_id"] = c.Request.Header.Get("X-Request-ID")
 	r.BodyInput = r.saveBody(c)
 	if !exist {
 		responseError := "missing user_id"
