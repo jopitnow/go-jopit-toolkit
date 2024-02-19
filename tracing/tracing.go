@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -81,8 +82,10 @@ func Value[T any](ctx context.Context) (T, bool) {
 func TraceMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		xtraceid, _ := c.Get("X-Trace-ID")
+
 		// does the request already have a trace? if so, use it. otherwise, generate a new one.
-		traceID, err := uuid.Parse(c.GetHeader("X-Trace-ID"))
+		traceID, err := uuid.Parse(fmt.Sprint(xtraceid))
 		if err != nil || traceID.String() == "" {
 			traceID = uuid.New()
 		}
