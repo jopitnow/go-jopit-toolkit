@@ -68,7 +68,7 @@ func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 	xrequestid, _ := c.Get("X-Request-ID")
 
 	r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
-	r.Values["request_user_id"] = userID.(string)
+	r.Values["request_user_id"] = fmt.Sprint(userID)
 	r.Values["request_name"] = requestName
 	r.Values["request_method"] = c.Request.Method
 	r.Values["request_body_size"] = strconv.Itoa(int(c.Request.ContentLength))
