@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type contextKey string
@@ -61,12 +62,25 @@ func (r *requestLogger) getResponseTimeMilliseconds() int64 {
 }
 
 func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
-	r.Values["request_user_id"] = c.Request.Header.Get("Authorization")
+
+	userID, exist1 := c.Get("user_id")
+	xtraceid, _ := c.Get("X-Trace-ID")
+	xrequestid, _ := c.Get("X-Request-ID")
+
+	r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
+	r.Values["request_user_id"] = userID.(string)
 	r.Values["request_name"] = requestName
 	r.Values["request_method"] = c.Request.Method
 	r.Values["request_body_size"] = strconv.Itoa(int(c.Request.ContentLength))
 	r.Values["request_url"] = c.Request.RequestURI
+	r.Values["request_x_trace_id"] = fmt.Sprint(xtraceid)
+	r.Values["request_x_request_id"] = fmt.Sprint(xrequestid)
 	r.BodyInput = r.saveBody(c)
+	if !exist1 {
+		responseError := "missing user_id"
+		r.Values["response_error"] = responseError
+		r.logError()
+	}
 }
 
 func (r *requestLogger) LogResponse(c *gin.Context) {

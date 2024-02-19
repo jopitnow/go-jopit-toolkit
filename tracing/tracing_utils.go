@@ -13,15 +13,16 @@ import (
 // assigning values to context.Context in a way that
 // only this package is able to access.
 // Example:
-//   ctx := context.WithValue(context.Background(), tracingKey, "value")
 //
-//   ctx.Value(rqCtxKey) // Read previous saved value from context
+//	ctx := context.WithValue(context.Background(), tracingKey, "value")
+//
+//	ctx.Value(rqCtxKey) // Read previous saved value from context
 type tracingKey struct{}
 
 const (
 	// RequestIDHeader exposes the Header to use for reading
 	// and propagating the request id from an transport context.
-	RequestIDHeader = "x-request-id"
+	RequestIDHeader = "X-Request-ID"
 
 	// RequestFlowStarterHeader is the transport Header that the tracing
 	// library forwards when the application start a new request flow.
@@ -86,7 +87,7 @@ func ContextFromHeader(ctx context.Context, h TraceableGetSetter) context.Contex
 		}
 	}
 
-	// Check to see if x-request-id is forwarded from the request. If not
+	// Check to see if X-Request-ID is forwarded from the request. If not
 	// generate a new request id and assign to the the Header h.
 	headers.Set(RequestIDHeader, h.Get(RequestIDHeader))
 	if reqID := headers.Get(RequestIDHeader); reqID == "" {
