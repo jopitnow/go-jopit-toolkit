@@ -22,7 +22,7 @@ type tracingKey struct{}
 const (
 	// RequestIDHeader exposes the Header to use for reading
 	// and propagating the request id from an transport context.
-	RequestIDHeader = "X-Request-Id"
+	RequestIDHeader = "X-Request-ID"
 
 	// RequestFlowStarterHeader is the transport Header that the tracing
 	// library forwards when the application start a new request flow.
@@ -87,7 +87,7 @@ func ContextFromHeader(ctx context.Context, h TraceableGetSetter) context.Contex
 		}
 	}
 
-	// Check to see if X-Request-Id is forwarded from the request. If not
+	// Check to see if X-Request-ID is forwarded from the request. If not
 	// generate a new request id and assign to the the Header h.
 	headers.Set(RequestIDHeader, h.Get(RequestIDHeader))
 	if reqID := headers.Get(RequestIDHeader); reqID == "" {
