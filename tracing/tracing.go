@@ -57,8 +57,8 @@ func NewFlowStarterContext(ctx context.Context) context.Context {
 }
 
 type Tracer struct {
-	TraceID   uuid.UUID // TraceID is unique across the lifecycle of a single 'event', regardless of how many requests it takes to complete. Carried in the `X-Trace-ID` header.
-	RequestID uuid.UUID // RequestID is unique to each request. Carried in the `X-Request-ID` header.
+	TraceID   uuid.UUID // TraceID is unique across the lifecycle of a single 'event', regardless of how many requests it takes to complete. Carried in the `X-Trace-Id` header.
+	RequestID uuid.UUID // RequestID is unique to each request. Carried in the `X-Request-Id` header.
 }
 
 type key[T any] struct{} // key is a unique type that we can use as a key in a context
@@ -77,12 +77,12 @@ func Value[T any](ctx context.Context) (T, bool) {
 // Trace returns a RoundTripFunc that
 // - adds a trace to the request context
 // - generating a new one if necessary
-// - adds the X-Trace-ID and X-Request-ID headers to the request
+// - adds the X-Trace-Id and X-Request-Id headers to the request
 // - then calls the next RoundTripper
 func TraceMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		xtraceid, _ := c.Get("X-Trace-ID")
+		xtraceid, _ := c.Get("X-Trace-Id")
 
 		// does the request already have a trace? if so, use it. otherwise, generate a new one.
 		traceID, err := uuid.Parse(fmt.Sprint(xtraceid))
@@ -98,11 +98,11 @@ func TraceMiddleware() gin.HandlerFunc {
 		c.Request = c.Request.WithContext(ctx)
 
 		// add trace id & request id to headers
-		c.Header(("X-Trace-ID"), trace.TraceID.String())
-		c.Set("X-Trace-ID", trace.TraceID.String())
+		c.Header(("X-Trace-Id"), trace.TraceID.String())
+		c.Set("X-Trace-Id", trace.TraceID.String())
 
-		c.Header(("X-Request-ID"), trace.RequestID.String())
-		c.Set(("X-Request-ID"), trace.RequestID.String())
+		c.Header(("X-Request-Id"), trace.RequestID.String())
+		c.Set(("X-Request-Id"), trace.RequestID.String())
 
 		c.Next()
 	}
