@@ -102,6 +102,8 @@ func TraceMiddleware() gin.HandlerFunc {
 		c.Set("X-Trace-ID", trace.TraceID.String())
 		c.Header(("X-Request-ID"), trace.RequestID.String())
 		c.Set(("X-Request-ID"), trace.RequestID.String())
+		fmt.Println("DEBUG 000002", trace.RequestID.String())
+		fmt.Println("DEBUG 000002", trace.TraceID.String())
 
 		c.Next()
 	}

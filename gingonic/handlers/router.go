@@ -13,7 +13,6 @@ import (
 
 	"github.com/agustinrabini/go-toolkit/goauth"
 	"github.com/agustinrabini/go-toolkit/goutils/apierrors"
-	"github.com/agustinrabini/go-toolkit/tracing"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -64,9 +63,9 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 	} else {
 		router.Use(goauth.MockAuthWithFirebase())
 	}
-	if !conf.DisableTracing {
+	/* 	if !conf.DisableTracing {
 		router.Use(tracing.TraceMiddleware())
-	}
+	} */
 
 	router.NoRoute(noRouteHandler)
 	return router
