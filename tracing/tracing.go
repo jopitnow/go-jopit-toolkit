@@ -95,7 +95,6 @@ func TraceMiddleware() gin.HandlerFunc {
 		c.Request = c.Request.WithContext(ctx)
 
 		// add trace id & request id to headers
-		c.Header(("X-Trace-ID"), trace.TraceID.String())
 		c.Request.Header.Set("X-Trace-ID", trace.TraceID.String())
 		c.Set("X-Trace-ID", trace.TraceID.String())
 
