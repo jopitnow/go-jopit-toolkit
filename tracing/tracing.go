@@ -84,8 +84,9 @@ func TraceMiddleware() gin.HandlerFunc {
 
 		fmt.Println("DEBUG . ", c.Request.Header.Get("X-Request-ID"))
 		fmt.Println("DEBUG . ", c.GetHeader("X-Trace-ID"))
+
 		// does the request already have a trace? if so, use it. otherwise, generate a new one.
-		traceID, err := uuid.Parse(c.Request.Header.Get("X-Request-ID"))
+		traceID, err := uuid.Parse(c.GetHeader("X-Trace-ID"))
 		if err != nil || traceID.String() == "" {
 			traceID = uuid.New()
 		}
