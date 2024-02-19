@@ -11,7 +11,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/agustinrabini/go-toolkit/goauth"
 	"github.com/agustinrabini/go-toolkit/goutils/apierrors"
 	"github.com/agustinrabini/go-toolkit/tracing"
 	"github.com/gin-contrib/gzip"
@@ -61,14 +60,6 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 	if !production {
 		router.Use(gin.Logger())
 	}
-	if production && !conf.DisableFirebaseAuth {
-		router.Use(goauth.AuthWithFirebase())
-	} else {
-		router.Use(goauth.MockAuthWithFirebase())
-	}
-	/* 	if !conf.DisableTracing {
-		router.Use(tracing.TraceMiddleware())
-	} */
 
 	router.NoRoute(noRouteHandler)
 	return router
@@ -91,9 +82,7 @@ type JopitRouterConfig struct {
 	// The default behavior from Go is to cancel the request context if it can
 	// ensure that there's no one on the other side to read the response.
 	DisableCancellationOnClientDisconnect bool
-	DisableFirebaseAuth                   bool
 	DisableCORS                           bool
-	DisableTracing                        bool
 }
 
 func noRouteHandler(c *gin.Context) {
