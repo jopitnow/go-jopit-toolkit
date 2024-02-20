@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -80,6 +81,8 @@ func Value[T any](ctx context.Context) (T, bool) {
 // - then calls the next RoundTripper
 func TraceMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		fmt.Println("DEBUG desde el toolkit", c.Request.Header.Get("X-Trace-ID"))
 
 		// does the request already have a trace? if so, use it. otherwise, generate a new one.
 		traceID, err := uuid.Parse(c.Request.Header.Get("X-Trace-ID"))
