@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
+type headerKey string
+
 const (
 	// RequestIDHeaderHTTP exposes the header to use for reading
 	// and propagating the request id from an HTTP context.
@@ -21,6 +23,10 @@ const (
 	// separated value of request headers that must be forwarded to the
 	// outgoing HTTP request that the application performs.
 	ForwardedHeadersNameHTTP = ForwardedHeadersName
+
+	XtraceHeaderKey headerKey = "X-Trace-ID"
+
+	XRequesIdHeaderKey headerKey = "X-Request-ID"
 )
 
 // ContextFromRequest given a http.Request returns a context decorated with the
