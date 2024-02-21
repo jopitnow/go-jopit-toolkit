@@ -63,7 +63,7 @@ func (r *requestLogger) getResponseTimeMilliseconds() int64 {
 
 func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 
-	userID, _ := c.Get("user_id")
+	userID := c.GetHeader("user_id")
 	xtraceid, _ := c.Get("X-Trace-ID")
 	xrequestid, _ := c.Get("X-Request-ID")
 
