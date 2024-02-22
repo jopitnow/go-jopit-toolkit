@@ -19,13 +19,16 @@ import (
 )
 
 const (
-	UserIDMock = "TEST-MOCK-USER"
+	UserIDMock                           = "TEST-MOCK-USER"
+	FirebaseAuthHeader firebaseHeaderKey = "Authorization"
 )
 
 var (
 	fbClient *firebaseClient
 	once     sync.Once
 )
+
+type firebaseHeaderKey string
 
 type firebaseCredential struct {
 	Type                    string `json:"type"`

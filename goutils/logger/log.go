@@ -63,11 +63,11 @@ func (r *requestLogger) getResponseTimeMilliseconds() int64 {
 
 func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 
-	userID, exist1 := c.Get("user_id")
+	userID, _ := c.Get("user_id")
 	xtraceid, _ := c.Get("X-Trace-ID")
 	xrequestid, _ := c.Get("X-Request-ID")
 
-	r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
+	//r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
 	r.Values["request_user_id"] = fmt.Sprint(userID)
 	r.Values["request_name"] = requestName
 	r.Values["request_method"] = c.Request.Method
@@ -76,11 +76,6 @@ func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 	r.Values["request_x_trace_id"] = fmt.Sprint(xtraceid)
 	r.Values["request_x_request_id"] = fmt.Sprint(xrequestid)
 	r.BodyInput = r.saveBody(c)
-	if !exist1 {
-		responseError := "missing user_id"
-		r.Values["response_error"] = responseError
-		r.logError()
-	}
 }
 
 func (r *requestLogger) LogResponse(c *gin.Context) {
