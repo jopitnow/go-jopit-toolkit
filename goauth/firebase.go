@@ -90,6 +90,7 @@ func GetEmailFromUserID(c *gin.Context) (string, error) {
 func AuthWithFirebase() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
+		fmt.Println("DEBUG ", header)
 		if header == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, fmt.Errorf("missing Authorization Header"))
 			return
