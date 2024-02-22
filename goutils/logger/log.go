@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/agustinrabini/go-toolkit/goauth"
 	"github.com/gin-gonic/gin"
 )
 
@@ -63,11 +64,11 @@ func (r *requestLogger) getResponseTimeMilliseconds() int64 {
 
 func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 
-	userID := c.GetHeader("user_id")
+	userID, _ := goauth.GetUserId(c)
 	xtraceid, _ := c.Get("X-Trace-ID")
 	xrequestid, _ := c.Get("X-Request-ID")
 
-	r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
+	//r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
 	r.Values["request_user_id"] = fmt.Sprint(userID)
 	r.Values["request_name"] = requestName
 	r.Values["request_method"] = c.Request.Method
