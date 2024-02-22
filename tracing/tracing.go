@@ -90,6 +90,7 @@ func TraceMiddleware() gin.HandlerFunc {
 
 		fmt.Println("debug desde toolkit 1 ", c.Request.Header.Get("X-Trace-ID"))
 		fmt.Println("debug desde toolkti 2 ", c.Request.Header.Get(string(XtraceHeaderKey)))
+		fmt.Println("debug desde toolkti 3", c.GetHeader(("X-Trace-ID")))
 
 		// does the request already have a trace? if so, use it. otherwise, generate a new one.
 		traceID, err := uuid.Parse(c.Request.Header.Get("X-Trace-ID"))
