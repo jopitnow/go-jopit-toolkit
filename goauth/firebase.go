@@ -13,8 +13,8 @@ import (
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
-	"github.com/agustinrabini/go-toolkit/goutils/apierrors"
 	"github.com/gin-gonic/gin"
+	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
 	"google.golang.org/api/option"
 )
 

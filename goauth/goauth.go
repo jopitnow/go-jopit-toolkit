@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/agustinrabini/go-toolkit/goutils/apierrors"
-	"github.com/agustinrabini/go-toolkit/rest"
-	"github.com/agustinrabini/go-toolkit/rest/retry"
+	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
+	"github.com/jopitnow/go-jopit-toolkit/rest"
+	"github.com/jopitnow/go-jopit-toolkit/rest/retry"
 	jsonLib "github.com/json-iterator/go"
 )
 
