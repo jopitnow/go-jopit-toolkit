@@ -3,10 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/agustinrabini/go-toolkit/goauth"
-	"github.com/agustinrabini/go-toolkit/goutils/apierrors"
-	"github.com/agustinrabini/go-toolkit/tracing"
 	"github.com/gin-gonic/gin"
+	"github.com/jopitnow/go-jopit-toolkit/goauth"
+	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
+	"github.com/jopitnow/go-jopit-toolkit/tracing"
 )
 
 func JopitAuth(scopes []string) gin.HandlerFunc {

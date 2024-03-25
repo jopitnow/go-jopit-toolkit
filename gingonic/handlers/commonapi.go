@@ -14,11 +14,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/agustinrabini/go-toolkit/goauth"
-	"github.com/agustinrabini/go-toolkit/goutils"
-	"github.com/agustinrabini/go-toolkit/goutils/apierrors"
-	"github.com/agustinrabini/go-toolkit/goutils/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/jopitnow/go-jopit-toolkit/goauth"
+	"github.com/jopitnow/go-jopit-toolkit/goutils"
+	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
+	"github.com/jopitnow/go-jopit-toolkit/goutils/logger"
 	json "github.com/json-iterator/go"
 )
 

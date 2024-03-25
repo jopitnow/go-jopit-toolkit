@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/agustinrabini/go-toolkit/golimiter/node"
+	"github.com/jopitnow/go-jopit-toolkit/golimiter/node"
 )
 
 var OverQuotaError = errors.New("over quota")
