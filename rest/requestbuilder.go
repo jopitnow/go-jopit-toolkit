@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/agustinrabini/go-toolkit/golimiter"
-	"github.com/agustinrabini/go-toolkit/goutils"
-	"github.com/agustinrabini/go-toolkit/rest/retry"
+	"github.com/jopitnow/go-jopit-toolkit/golimiter"
+	"github.com/jopitnow/go-jopit-toolkit/goutils"
+	"github.com/jopitnow/go-jopit-toolkit/rest/retry"
 )
 
 // Retry rate limiter

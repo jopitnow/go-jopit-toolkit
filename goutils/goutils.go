@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/agustinrabini/go-toolkit/goutils/logger"
+	"github.com/jopitnow/go-jopit-toolkit/goutils/logger"
 )
 
 func ToJSONString(value interface{}) (string, error) {

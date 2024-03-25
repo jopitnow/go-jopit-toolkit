@@ -1,4 +1,4 @@
-module github.com/agustinrabini/go-toolkit
+module github.com/jopitnow/go-jopit-toolkit
 
 go 1.21.6
 

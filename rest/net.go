@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/agustinrabini/go-toolkit/tracing"
+	"github.com/jopitnow/go-jopit-toolkit/tracing"
 )
 
 // We need to consume response bodies to maintain http connections, but
