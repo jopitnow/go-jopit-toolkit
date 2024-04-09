@@ -216,11 +216,6 @@ func (fam firebaseAccountManager) ResetPassword(c *gin.Context, userEmail string
 	return link, nil
 }
 
-/*
-traceHeader := http.Header{}
-xid := ctx.Value(tracing.XtraceHeaderKey)
-traceHeader.Add("X-Trace-ID", fmt.Sprint(xid))
-*/
 func NewServiceGetEmailFromUserID() GetEmailFromUserID {
 	return &getEmailFromUserId{}
 }
