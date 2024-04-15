@@ -18,9 +18,12 @@ import (
 	"google.golang.org/api/option"
 )
 
+type headerKey string
+
 const (
 	UserIDMock                           = "TEST-MOCK-USER"
 	FirebaseAuthHeader firebaseHeaderKey = "Authorization"
+	FirebaseUserID     firebaseUserID    = "user_id"
 )
 
 var (
@@ -29,6 +32,7 @@ var (
 )
 
 type firebaseHeaderKey string
+type firebaseUserID string
 
 type firebaseCredential struct {
 	Type                    string `json:"type"`
@@ -70,7 +74,7 @@ func InitFirebase() {
 	}
 }
 
-func GetEmailFromUserID(c *gin.Context) (string, error) {
+/* func GetEmailFromUserID(c *gin.Context) (string, error) {
 
 	userID, exist := c.Get("user_id")
 	if !exist {
@@ -85,7 +89,7 @@ func GetEmailFromUserID(c *gin.Context) (string, error) {
 	userEmail := userRecord.UserInfo.Email
 
 	return userEmail, nil
-}
+} */
 
 func AuthWithFirebase() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -210,4 +214,34 @@ func (fam firebaseAccountManager) ResetPassword(c *gin.Context, userEmail string
 	}
 
 	return link, nil
+}
+
+func NewServiceGetEmailFromUserID() GetEmailFromUserID {
+	return &getEmailFromUserId{}
+}
+
+type getEmailFromUserId struct {
+	GetEmailFromUserIDInterface GetEmailFromUserID
+}
+
+type GetEmailFromUserID interface {
+	GetEmailFromUserID(ctx context.Context) (string, error)
+}
+
+func (getemail getEmailFromUserId) GetEmailFromUserID(ctx context.Context) (string, error) {
+
+	userID := ctx.Value(FirebaseUserID)
+	if userID == "" {
+		return "", fmt.Errorf("expected to receive an user_id, but it was empty")
+	}
+
+	userRecord, err := fbClient.AuthClient.GetUser(ctx, userID.(string))
+	if err != nil {
+		return "", err
+	}
+
+	userEmail := userRecord.UserInfo.Email
+
+	return userEmail, nil
+
 }
