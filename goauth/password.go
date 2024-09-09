@@ -42,22 +42,26 @@ func PasswordMiddleware() gin.HandlerFunc {
 
 		headerUsername := c.GetHeader("Admin-Username")
 		if headerUsername == "" {
+			fmt.Println("nooooooo ", pwdMiddCredentials.username, pwdMiddCredentials.password)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, "username is empty, please provide one")
 			return
 		}
 
 		headerPassword := c.GetHeader("Admin-Password")
 		if headerPassword == "" {
+			fmt.Println("nooooooo 2", pwdMiddCredentials.username, pwdMiddCredentials.password)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, "password is empty, please provide one")
 			return
 		}
 
 		if headerUsername != pwdMiddCredentials.username {
+			fmt.Println("SAPE ", pwdMiddCredentials.username, pwdMiddCredentials.password)
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		if headerPassword != pwdMiddCredentials.password {
+			fmt.Println("SAPE LOQUITA ", pwdMiddCredentials.password, pwdMiddCredentials.password)
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
