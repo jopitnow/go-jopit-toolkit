@@ -1,6 +1,7 @@
 package goauth
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +13,16 @@ import (
 var (
 	oncePassword       sync.Once
 	pwdMiddCredentials *passwordMiddleware
+)
+
+type AdminHeaderUsr string
+type AdminHeaderPwd string
+
+const (
+	valueAdminUsr                      = "Admin-Username"
+	valueAdminPwd                      = "Admin-Password"
+	AdminHeaderUsername AdminHeaderUsr = valueAdminUsr
+	AdminHeaderPassword AdminHeaderPwd = valueAdminPwd
 )
 
 type passwordMiddleware struct {
@@ -65,6 +76,14 @@ func PasswordMiddleware() gin.HandlerFunc {
 		c.Set("Admin-Username", headerUsername)
 		c.Next()
 	}
+}
+
+func SetContextWithAdminValues(c *gin.Context) context.Context {
+
+	ctx := context.WithValue(c.Request.Context(), AdminHeaderUsername, c.GetHeader(valueAdminUsr)) //to do move to toolkit
+	ctx = context.WithValue(ctx, AdminHeaderPassword, c.GetHeader(valueAdminPwd))                  //to do move to toolkit
+
+	return ctx
 }
 
 func init() {
