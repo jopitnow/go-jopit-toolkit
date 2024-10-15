@@ -67,11 +67,17 @@ func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 	xtraceid, _ := c.Get("X-Trace-ID")
 	xrequestid, _ := c.Get("X-Request-ID")
 
+	jsonBody, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		r.logErrorDecodeInfo()
+	}
+
 	//r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
 	r.Values["request_user_id"] = fmt.Sprint(userID)
 	r.Values["request_name"] = requestName
 	r.Values["request_method"] = c.Request.Method
 	r.Values["request_body_size"] = strconv.Itoa(int(c.Request.ContentLength))
+	r.Values["request_body"] = fmt.Sprint(jsonBody)
 	r.Values["request_url"] = c.Request.RequestURI
 	r.Values["request_x_trace_id"] = fmt.Sprint(xtraceid)
 	r.Values["request_x_request_id"] = fmt.Sprint(xrequestid)
@@ -83,6 +89,7 @@ func (r *requestLogger) LogResponse(c *gin.Context) {
 	r.Values["response_time"] = strconv.FormatInt(r.getResponseTimeMilliseconds(), 10) + "ms"
 	r.Values["response_status"] = responseStatus
 	r.Values["response_status_group"] = responseStatus[0:1] + "XX"
+	r.Values["response_body"] = r.BodyWriter.body.String()
 	if c.Writer.Status() >= 400 || !logLimiter(r.LogBodyRatio) {
 		r.Values["request_body"] = r.BodyInput
 	}
@@ -95,9 +102,31 @@ func (r *requestLogger) LogResponse(c *gin.Context) {
 	}
 }
 
+type bodyLogWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func ginBodyLogMiddleware(c *gin.Context) {
+	blw := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	c.Writer = blw
+	c.Next()
+	statusCode := c.Writer.Status()
+	if statusCode >= 400 {
+		//ok this is an request with error, let's make a record for it
+		// now print body (or log in your preferred way)
+		fmt.Println("Response body: " + blw.body.String())
+	}
+}
+
 func (r *requestLogger) logInfo() {
 	message := r.BuildLogMessage()
 	Info(message)
+}
+
+func (r *requestLogger) logErrorDecodeInfo() {
+	message := r.BuildLogMessage()
+	Info(message + "error decoding json request on the logger")
 }
 
 func (r *requestLogger) logError() {
