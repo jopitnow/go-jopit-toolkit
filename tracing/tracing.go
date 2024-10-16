@@ -87,8 +87,10 @@ func Value[T any](ctx context.Context) (T, bool) {
 func TraceMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		traceHeader := c.Request.Header.Get("X-Trace-ID")
+
 		// does the request already have a trace? if so, use it. otherwise, generate a new one.
-		traceID, err := uuid.Parse(c.Request.Header.Get("X-Trace-ID"))
+		traceID, err := uuid.Parse(traceHeader)
 		if err != nil || traceID.String() == "" {
 			traceID = uuid.New()
 		}
