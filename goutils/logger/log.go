@@ -76,6 +76,8 @@ func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 		r.logErrorDecodeInfo()
 	}
 
+	_ = io.NopCloser(bytes.NewBuffer(jsonBody))
+
 	//r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
 	r.Values["request_user_id"] = userID
 	r.Values["request_name"] = requestName
