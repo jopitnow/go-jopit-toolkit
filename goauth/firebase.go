@@ -200,7 +200,7 @@ func (fam firebaseAccountManager) VerificationEmail(c *gin.Context, userEmail st
 
 	link, err := fam.AuthClient.EmailVerificationLink(c, userEmail)
 	if err != nil {
-		return "", apierrors.NewApiError("error on firebase verification . ", err.Error(), 500, apierrors.CauseList{})
+		return "", apierrors.NewApiError("error on firebase verification . ", "TK_13", http.StatusInternalServerError, apierrors.CauseList{err.Error()})
 	}
 
 	return link, nil
@@ -210,7 +210,7 @@ func (fam firebaseAccountManager) ResetPassword(c *gin.Context, userEmail string
 
 	link, err := fam.AuthClient.PasswordResetLink(c, userEmail)
 	if err != nil {
-		return "", apierrors.NewApiError("error on firebase PasswordResetLink. ", err.Error(), 500, apierrors.CauseList{})
+		return "", apierrors.NewApiError("error on firebase PasswordResetLink. ", "TK_14", http.StatusInternalServerError, apierrors.CauseList{err.Error()})
 	}
 
 	return link, nil
