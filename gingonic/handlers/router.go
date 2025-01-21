@@ -14,6 +14,7 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
+	"github.com/jopitnow/go-jopit-toolkit/goauth"
 	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
 	"github.com/jopitnow/go-jopit-toolkit/tracing"
 	swaggerFiles "github.com/swaggo/files"
@@ -49,7 +50,7 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 		router.Use(HeaderForwarding())
 	}
 	if !conf.DisableSwagger {
-		router.GET(fmt.Sprintf("%s/swagger/*any", ApiName), ginSwagger.WrapHandler(swaggerFiles.Handler))
+		router.GET(fmt.Sprintf("%s/swagger/*any", ApiName), goauth.BasicAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 	if !conf.DisableCORS {
 		router.Use(CORSMiddleware())
