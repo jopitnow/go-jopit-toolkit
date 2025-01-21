@@ -1,16 +1,13 @@
 package goauth
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
 	"github.com/jopitnow/go-jopit-toolkit/rest"
 	"github.com/jopitnow/go-jopit-toolkit/rest/retry"
@@ -216,33 +213,4 @@ func init() {
 	}
 
 	useMock = !(os.Getenv("GO_ENVIRONMENT") == "production")
-}
-
-func BasicAuth() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		auth := c.GetHeader("Authorization")
-		if auth == "" {
-			c.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-		token := strings.TrimPrefix(auth, "Basic ")
-		decoded, err := base64.StdEncoding.DecodeString(token)
-		if err != nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-		pair := strings.SplitN(string(decoded), ":", 2)
-		if len(pair) != 2 || !validateCredentials(pair[0], pair[1]) {
-			c.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-		c.Next()
-	}
-}
-
-func validateCredentials(username, password string) bool {
-	// Replace these with your desired username and password
-	return username == "yourUsername" && password == "yourPassword"
 }
