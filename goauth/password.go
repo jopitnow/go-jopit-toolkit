@@ -2,9 +2,11 @@ package goauth
 
 import (
 	"context"
+	"encoding/base64"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -107,4 +109,32 @@ func InitPasswordMiddleware() {
 	}
 
 	pwdMiddCredentials.setPassword(password)
+}
+
+func BasicAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		auth := c.GetHeader("Authorization")
+		if auth == "" {
+			c.Header("WWW-Authenticate", `Basic realm="Restricted"`)
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		token := strings.TrimPrefix(auth, "Basic ")
+		decoded, err := base64.StdEncoding.DecodeString(token)
+		if err != nil {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		pair := strings.SplitN(string(decoded), ":", 2)
+		if len(pair) != 2 || !validateCredentials(pair[0], pair[1]) {
+			c.Header("WWW-Authenticate", `Basic realm="Restricted"`)
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		c.Next()
+	}
+}
+
+func validateCredentials(username, password string) bool {
+	return username == pwdMiddCredentials.username && password == pwdMiddCredentials.password
 }
