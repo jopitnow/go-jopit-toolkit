@@ -14,6 +14,7 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
+	"github.com/jopitnow/go-jopit-toolkit/goauth"
 	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
 	"github.com/jopitnow/go-jopit-toolkit/tracing"
 	swaggerFiles "github.com/swaggo/files"
@@ -21,6 +22,8 @@ import (
 )
 
 var production bool = os.Getenv("GO_ENVIRONMENT") == "production"
+
+var ApiName string = ""
 
 func DefaultJopitRouter() *gin.Engine {
 	return CustomJopitRouter(JopitRouterConfig{})
@@ -37,13 +40,8 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 			c.Next()
 		})
 	}
-
 	if conf.EnableResponseCompressionSupport {
 		router.Use(gzip.Gzip(gzip.DefaultCompression))
-	}
-
-	if !conf.DisableCommonApiFilter {
-		router.Use(CommonAPiFilter(!conf.DisableCommonApiFilterErrorLog))
 	}
 	if !conf.DisablePprof {
 		pprof.Register(router)
@@ -52,13 +50,16 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 		router.Use(HeaderForwarding())
 	}
 	if !conf.DisableSwagger {
-		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		router.GET(fmt.Sprintf("%s/swagger/*any", ApiName), goauth.BasicAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 	if !conf.DisableCORS {
 		router.Use(CORSMiddleware())
 	}
 	if !production {
 		router.Use(gin.Logger())
+	}
+	if !conf.DisableCommonApiFilter {
+		router.Use(CommonAPiFilter(!conf.DisableCommonApiFilterErrorLog))
 	}
 
 	router.NoRoute(noRouteHandler)
@@ -86,7 +87,7 @@ type JopitRouterConfig struct {
 }
 
 func noRouteHandler(c *gin.Context) {
-	c.JSON(http.StatusNotFound, apierrors.NewNotFoundApiError(fmt.Sprintf("Resource %s not found.", c.Request.URL.Path)))
+	c.JSON(http.StatusNotFound, apierrors.NewApiError(fmt.Sprintf("Resource %s not found.", c.Request.URL.Path), fmt.Sprintf("Resource %s not found.", c.Request.URL.Path), http.StatusNotFound, apierrors.CauseList{}))
 }
 
 func AddResponseExpiration(time time.Duration, c *gin.Context) {
