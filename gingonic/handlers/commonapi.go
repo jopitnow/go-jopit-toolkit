@@ -187,29 +187,21 @@ func handleServerError(c *gin.Context, data []byte, status int, logError bool) [
 // middleware sources in order of availability: context -> middleware
 func retrieveAndNoticeMiddlewareError(c *gin.Context, data []byte, status int) apierrors.ApiError {
 
+	var notifiableErr error
+	var apierr apierrors.ApiError
+
 	ctxErr := errorFromGinContext(c)
 	if ctxErr != nil {
-		return apierrors.NewApiError(
-			ctxErr.Error(),
-			"TK_03",
-			status,
-			apierrors.CauseList{
-				"Error from context middleware",
-			},
-		)
+		notifiableErr = ctxErr
 	}
 
-	message := "An error occurred"
-	if len(data) > 0 {
-		message = string(data)
+	err := json.Unmarshal(data, &apierr)
+
+	if notifiableErr == nil && err == nil {
+		notifiableErr = apierr
 	}
 
-	return apierrors.NewApiError(
-		message,
-		"TK_04",
-		status,
-		nil,
-	)
+	return apierr
 
 }
 
