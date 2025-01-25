@@ -188,20 +188,19 @@ func handleServerError(c *gin.Context, data []byte, status int, logError bool) [
 func retrieveAndNoticeMiddlewareError(c *gin.Context, data []byte, status int) apierrors.ApiError {
 
 	var notifiableErr error
-	apierr := apierrors.NewApiError("", "", 0, apierrors.CauseList{})
 
 	ctxErr := errorFromGinContext(c)
 	if ctxErr != nil {
 		notifiableErr = ctxErr
 	}
 
-	err := json.Unmarshal(data, &apierr)
+	retErr, err := apierrors.NewApiErrorFromBytes(data, status)
 
 	if notifiableErr == nil && err == nil {
-		notifiableErr = apierr
+		notifiableErr = retErr
 	}
 
-	return apierr
+	return retErr
 
 }
 
