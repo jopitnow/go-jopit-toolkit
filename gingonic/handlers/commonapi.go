@@ -188,7 +188,7 @@ func handleServerError(c *gin.Context, data []byte, status int, logError bool) [
 func retrieveAndNoticeMiddlewareError(c *gin.Context, data []byte, status int) apierrors.ApiError {
 
 	var notifiableErr error
-	var apierr apierrors.ApiError
+	apierr := apierrors.NewApiError("", "", 0, apierrors.CauseList{})
 
 	ctxErr := errorFromGinContext(c)
 	if ctxErr != nil {
