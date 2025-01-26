@@ -5,6 +5,7 @@
 package apierrors
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -51,4 +52,10 @@ func (e apiErr) Message() string {
 
 func NewApiError(message string, error string, status int, cause CauseList) ApiError {
 	return apiErr{message, error, status, cause}
+}
+
+func NewApiErrorFromBytes(data []byte) (ApiError, error) {
+	var apierr apiErr
+	err := json.Unmarshal(data, &apierr)
+	return apierr, err
 }
