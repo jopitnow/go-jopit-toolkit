@@ -194,7 +194,7 @@ func retrieveAndNoticeMiddlewareError(c *gin.Context, data []byte, status int) a
 		notifiableErr = ctxErr
 	}
 
-	retErr, err := apierrors.NewApiErrorFromBytes(data, status)
+	retErr, err := apierrors.NewApiErrorFromBytes(data)
 
 	if notifiableErr == nil && err == nil {
 		notifiableErr = retErr

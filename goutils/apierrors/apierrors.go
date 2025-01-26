@@ -54,7 +54,7 @@ func NewApiError(message string, error string, status int, cause CauseList) ApiE
 	return apiErr{message, error, status, cause}
 }
 
-func NewApiErrorFromBytes(data []byte, status int) (ApiError, error) {
+func NewApiErrorFromBytes(data []byte) (ApiError, error) {
 	var apierr apiErr
 	err := json.Unmarshal(data, &apierr)
 	return apierr, err
