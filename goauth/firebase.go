@@ -162,10 +162,10 @@ func CheckFirebaseCredentials() error {
 	return nil
 }
 
-func GetUserId(c *gin.Context) (string, error) {
+func GetUserId(c *gin.Context) (string, apierrors.ApiError) {
 	userID, exist := c.Get("user_id")
 	if !exist {
-		return "", fmt.Errorf("user_id is empty")
+		return "", apierrors.NewApiError("user_id is empty", "unauthorized", http.StatusInternalServerError, apierrors.CauseList{})
 	}
 	return userID.(string), nil
 }
@@ -192,13 +192,13 @@ func NewFirebaseAccountManager() FirebaseAccountManager {
 }
 
 type FirebaseAccountManager interface {
-	VerificationEmail(c *gin.Context, userEmail string) (string, apierrors.ApiError)
-	ResetPassword(c *gin.Context, userEmail string) (string, apierrors.ApiError)
+	VerificationEmail(ctx context.Context, userEmail string) (string, apierrors.ApiError)
+	ResetPassword(ctx context.Context, userEmail string) (string, apierrors.ApiError)
 }
 
-func (fam firebaseAccountManager) VerificationEmail(c *gin.Context, userEmail string) (string, apierrors.ApiError) {
+func (fam firebaseAccountManager) VerificationEmail(ctx context.Context, userEmail string) (string, apierrors.ApiError) {
 
-	link, err := fam.AuthClient.EmailVerificationLink(c, userEmail)
+	link, err := fam.AuthClient.EmailVerificationLink(ctx, userEmail)
 	if err != nil {
 		return "", apierrors.NewApiError("error on firebase verification . ", "TK_13", http.StatusInternalServerError, apierrors.CauseList{err.Error()})
 	}
@@ -206,9 +206,9 @@ func (fam firebaseAccountManager) VerificationEmail(c *gin.Context, userEmail st
 	return link, nil
 }
 
-func (fam firebaseAccountManager) ResetPassword(c *gin.Context, userEmail string) (string, apierrors.ApiError) {
+func (fam firebaseAccountManager) ResetPassword(ctx context.Context, userEmail string) (string, apierrors.ApiError) {
 
-	link, err := fam.AuthClient.PasswordResetLink(c, userEmail)
+	link, err := fam.AuthClient.PasswordResetLink(ctx, userEmail)
 	if err != nil {
 		return "", apierrors.NewApiError("error on firebase PasswordResetLink. ", "TK_14", http.StatusInternalServerError, apierrors.CauseList{err.Error()})
 	}
@@ -225,19 +225,19 @@ type getEmailFromUserId struct {
 }
 
 type GetEmailFromUserID interface {
-	GetEmailFromUserID(ctx context.Context) (string, error)
+	GetEmailFromUserID(ctx context.Context) (string, apierrors.ApiError)
 }
 
-func (getemail getEmailFromUserId) GetEmailFromUserID(ctx context.Context) (string, error) {
+func (getemail getEmailFromUserId) GetEmailFromUserID(ctx context.Context) (string, apierrors.ApiError) {
 
 	userID := ctx.Value(FirebaseUserID)
-	if userID == "" {
-		return "", fmt.Errorf("expected to receive an user_id, but it was empty")
+	if userID == nil {
+		return "", apierrors.NewApiError("error retrieving userID from the context, its emopty!", "internal_server_error", http.StatusInternalServerError, apierrors.CauseList{})
 	}
 
 	userRecord, err := fbClient.AuthClient.GetUser(ctx, userID.(string))
 	if err != nil {
-		return "", err
+		return "", apierrors.NewApiError(err.Error(), "internal_server_error", http.StatusInternalServerError, apierrors.CauseList{})
 	}
 
 	userEmail := userRecord.UserInfo.Email
