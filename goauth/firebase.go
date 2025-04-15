@@ -162,10 +162,10 @@ func CheckFirebaseCredentials() error {
 	return nil
 }
 
-func GetUserId(c *gin.Context) (string, error) {
+func GetUserId(c *gin.Context) (string, apierrors.ApiError) {
 	userID, exist := c.Get("user_id")
 	if !exist {
-		return "", fmt.Errorf("user_id is empty")
+		return "", apierrors.NewApiError("user_id is empty", "unauthorized", http.StatusInternalServerError, apierrors.CauseList{})
 	}
 	return userID.(string), nil
 }
