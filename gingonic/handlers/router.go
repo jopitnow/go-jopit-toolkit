@@ -16,9 +16,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jopitnow/go-jopit-toolkit/goauth"
 	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
-	"github.com/jopitnow/go-jopit-toolkit/tracing"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 var production bool = os.Getenv("GO_ENVIRONMENT") == "production"
@@ -30,9 +30,8 @@ func DefaultJopitRouter() *gin.Engine {
 }
 
 func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
-	router := gin.New()
 
-	router.Use(tracing.TraceMiddleware())
+	router := gin.New()
 
 	if conf.DisableCancellationOnClientDisconnect {
 		router.Use(func(c *gin.Context) {
@@ -61,6 +60,9 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 	if !conf.DisableCommonApiFilter {
 		router.Use(CommonAPiFilter(!conf.DisableCommonApiFilterErrorLog))
 	}
+	if !conf.DisableTracer {
+		router.Use(otelgin.Middleware(ApiName + "-service"))
+	}
 
 	router.NoRoute(noRouteHandler)
 	return router
@@ -84,6 +86,7 @@ type JopitRouterConfig struct {
 	// ensure that there's no one on the other side to read the response.
 	DisableCancellationOnClientDisconnect bool
 	DisableCORS                           bool
+	DisableTracer                         bool
 }
 
 func noRouteHandler(c *gin.Context) {
