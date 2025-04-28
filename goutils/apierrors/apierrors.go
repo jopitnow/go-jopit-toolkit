@@ -7,6 +7,9 @@ package apierrors
 import (
 	"encoding/json"
 	"fmt"
+
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type CauseList []interface{}
@@ -58,4 +61,11 @@ func NewApiErrorFromBytes(data []byte) (ApiError, error) {
 	var apierr apiErr
 	err := json.Unmarshal(data, &apierr)
 	return apierr, err
+}
+
+func NewTraceAndWrapError(span trace.Span, message string, err error, statusCode int) ApiError {
+	apierr := NewApiError(message+": "+err.Error(), "internal_server_error", statusCode, CauseList{})
+	span.RecordError(apierr)
+	span.SetStatus(codes.Error, apierr.Message())
+	return apierr
 }
