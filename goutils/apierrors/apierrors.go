@@ -63,7 +63,7 @@ func NewApiErrorFromBytes(data []byte) (ApiError, error) {
 	return apierr, err
 }
 
-func NewWrapAndTraceError(span trace.Span, apierr apiErr) ApiError {
+func NewWrapAndTraceError(span trace.Span, apierr ApiError) ApiError {
 	span.RecordError(apierr)
 	span.SetStatus(codes.Error, apierr.Message())
 	return apierr
