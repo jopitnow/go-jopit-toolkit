@@ -63,8 +63,7 @@ func NewApiErrorFromBytes(data []byte) (ApiError, error) {
 	return apierr, err
 }
 
-func NewTraceAndWrapError(span trace.Span, message string, err error, statusCode int) ApiError {
-	apierr := NewApiError(message+": "+err.Error(), "internal_server_error", statusCode, CauseList{})
+func NewWrapAndTraceError(span trace.Span, apierr apiErr) ApiError {
 	span.RecordError(apierr)
 	span.SetStatus(codes.Error, apierr.Message())
 	return apierr
