@@ -7,6 +7,10 @@ package apierrors
 import (
 	"encoding/json"
 	"fmt"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type CauseList []interface{}
@@ -58,4 +62,16 @@ func NewApiErrorFromBytes(data []byte) (ApiError, error) {
 	var apierr apiErr
 	err := json.Unmarshal(data, &apierr)
 	return apierr, err
+}
+
+func NewWrapAndTraceError(span trace.Span, apierr ApiError) ApiError {
+	span.RecordError(apierr)
+	span.SetStatus(codes.Error, apierr.Error())
+	span.SetAttributes(
+		attribute.String("error.code", apierr.Code()),
+		attribute.String("error.message", apierr.Message()),
+		attribute.String("error.error", apierr.Error()),
+		attribute.Int("error.status", apierr.Status()),
+	)
+	return apierr
 }
