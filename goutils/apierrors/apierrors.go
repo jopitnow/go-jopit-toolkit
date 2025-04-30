@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -65,6 +66,12 @@ func NewApiErrorFromBytes(data []byte) (ApiError, error) {
 
 func NewWrapAndTraceError(span trace.Span, apierr ApiError) ApiError {
 	span.RecordError(apierr)
-	span.SetStatus(codes.Error, apierr.Message())
+	span.SetStatus(codes.Error, apierr.Error())
+	span.SetAttributes(
+		attribute.String("error.code", apierr.Code()),
+		attribute.String("error.message", apierr.Message()),
+		attribute.String("error.error", apierr.Error()),
+		attribute.Int("error.status", apierr.Status()),
+	)
 	return apierr
 }
