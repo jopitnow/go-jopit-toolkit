@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -15,8 +16,14 @@ import (
 func InitTracer(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
 
+	apikey := os.Getenv("OTEL_EXPORTER_OTLP_APIKEY")
+
+	headers := map[string]string{
+		"Authorization": "Basic " + apikey,
+	}
+
 	// Configure the exporter with the Tempo endpoint and authentication header.
-	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithTimeout(10*time.Second))
+	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithTimeout(10*time.Second), otlptracehttp.WithHeaders(headers))
 	if err != nil {
 		return nil, err
 	}
