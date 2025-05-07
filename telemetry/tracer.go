@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -11,19 +10,14 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 )
 
-func InitTracer(apiName string) (func(context.Context) error, error) {
+func InitTracerExporter(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
 
-	apikey := os.Getenv("OTEL_EXPORTER_OTLP_APIKEY")
-
-	headers := map[string]string{
-		"Authorization": "Basic " + apikey,
-	}
-
 	// Configure the exporter with the Tempo endpoint and authentication header.
-	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithTimeout(10*time.Second), otlptracehttp.WithHeaders(headers))
+	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithTimeout(10*time.Second), otlptracehttp.WithEndpointURL("http://localhost:4318/v1/traces"))
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +26,7 @@ func InitTracer(apiName string) (func(context.Context) error, error) {
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			attribute.String("service.name", apiName+"-api"),
-			//attribute.String("environment", "local"), //to-do
+			attribute.String("environment", "local"), //to-do
 		),
 	)
 	if err != nil {
@@ -47,4 +41,12 @@ func InitTracer(apiName string) (func(context.Context) error, error) {
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 	otel.SetTracerProvider(tp)
 	return tp.Shutdown, nil
+}
+
+func GetTraceIDFromContext(ctx context.Context) string {
+	span := trace.SpanFromContext(ctx)
+	if !span.SpanContext().IsValid() {
+		return "No trace ID found in context"
+	}
+	return span.SpanContext().TraceID().String()
 }

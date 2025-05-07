@@ -11,7 +11,10 @@ import (
 	"strings"
 	"time"
 
+	otellog "go.opentelemetry.io/otel/log"
+
 	"github.com/gin-gonic/gin"
+	"github.com/jopitnow/go-jopit-toolkit/telemetry"
 )
 
 type contextKey string
@@ -29,6 +32,7 @@ type requestLogger struct {
 	StartTime    time.Time
 	BodyWriter   *responseBodyWriter
 	BodyInput    string
+	Message      string
 }
 
 type responseBodyWriter struct {
@@ -61,20 +65,30 @@ func (r *requestLogger) getResponseTimeMilliseconds() int64 {
 	return time.Since(r.StartTime).Milliseconds()
 }
 
+func (r *requestLogger) SendLogs(ctx context.Context) {
+	record := otellog.Record{}
+
+	for k, v := range r.Values {
+		record.AddAttributes(otellog.String(k, v))
+	}
+	record.SetTimestamp(r.StartTime)
+	record.SetBody(otellog.StringValue(r.Message))
+
+	telemetry.LoggerProvider.Emit(ctx, record)
+}
+
 func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 
 	userID, _ := c.Get("user_id")
-	xtraceid, _ := c.Get("X-Trace-ID")
-	xrequestid, _ := c.Get("X-Request-ID")
 
-	//r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
+	r.Values["request_authorization_header"] = fmt.Sprint(c.Request.Header.Get("Authorization") != "")
 	r.Values["request_user_id"] = fmt.Sprint(userID)
 	r.Values["request_name"] = requestName
 	r.Values["request_method"] = c.Request.Method
 	r.Values["request_body_size"] = strconv.Itoa(int(c.Request.ContentLength))
 	r.Values["request_url"] = c.Request.RequestURI
-	r.Values["request_x_trace_id"] = fmt.Sprint(xtraceid)
-	r.Values["request_x_request_id"] = fmt.Sprint(xrequestid)
+	r.Values["request_x_trace_id"] = telemetry.GetTraceIDFromContext(c.Request.Context())
+
 	r.BodyInput = r.saveBody(c)
 }
 
@@ -96,16 +110,16 @@ func (r *requestLogger) LogResponse(c *gin.Context) {
 }
 
 func (r *requestLogger) logInfo() {
-	message := r.BuildLogMessage()
-	Info(message)
+	r.BuildLogMessage()
+	Info(r.Message)
 }
 
 func (r *requestLogger) logError() {
-	message := r.BuildLogMessage()
-	Error(message, nil)
+	r.BuildLogMessage()
+	Error(r.Message, nil)
 }
 
-func (r *requestLogger) BuildLogMessage() string {
+func (r *requestLogger) BuildLogMessage() {
 	message := "RequestLogger "
 
 	var logKeys []string
@@ -123,7 +137,9 @@ func (r *requestLogger) BuildLogMessage() string {
 	message += r.getLogMessageByKey("request_body")
 	message += r.getLogMessageByKey("response_error")
 	message += strings.Replace(r.getLogMessageByKey("message"), "\"", "'", -1)
-	return message
+
+	r.Message = message
+
 }
 
 func (r *requestLogger) getLogMessageByKey(key string) string {
