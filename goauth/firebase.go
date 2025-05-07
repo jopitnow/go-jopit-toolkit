@@ -24,6 +24,7 @@ const (
 	UserIDMock                           = "TEST-MOCK-USER"
 	FirebaseAuthHeader firebaseHeaderKey = "Authorization"
 	FirebaseUserID     firebaseUserID    = "user_id"
+	userValidationKey  string            = "kyc_verified"
 )
 
 var (
@@ -109,6 +110,30 @@ func AuthWithFirebase() gin.HandlerFunc {
 		c.Set("user_id", decodedToken.UID)
 		c.Next()
 	}
+}
+
+func SetUserValidated(ctx *gin.Context, uid string, isVerified bool) error {
+	claims := map[string]interface{}{userValidationKey: isVerified}
+
+	err := fbClient.AuthClient.SetCustomUserClaims(ctx, uid, claims)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func IsUserValidated(ctx context.Context, uid string) (bool, error) {
+	user, err := fbClient.AuthClient.GetUser(ctx, uid)
+	if err != nil {
+		return false, err
+	}
+
+	if value, ok := user.CustomClaims[userValidationKey].(bool); ok {
+		return value, nil
+	}
+
+	return false, nil
 }
 
 func CheckFirebaseCredentials() error {
