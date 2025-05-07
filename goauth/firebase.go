@@ -112,30 +112,6 @@ func AuthWithFirebase() gin.HandlerFunc {
 	}
 }
 
-func SetUserValidated(ctx *gin.Context, uid string, isVerified bool) error {
-	claims := map[string]interface{}{userValidationKey: isVerified}
-
-	err := fbClient.AuthClient.SetCustomUserClaims(ctx, uid, claims)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func IsUserValidated(ctx context.Context, uid string) (bool, error) {
-	user, err := fbClient.AuthClient.GetUser(ctx, uid)
-	if err != nil {
-		return false, err
-	}
-
-	if value, ok := user.CustomClaims[userValidationKey].(bool); ok {
-		return value, nil
-	}
-
-	return false, nil
-}
-
 func CheckFirebaseCredentials() error {
 	var fields []string
 	firebaseCredentials := firebaseCredential{}
@@ -219,6 +195,8 @@ func NewFirebaseAccountManager() FirebaseAccountManager {
 type FirebaseAccountManager interface {
 	VerificationEmail(ctx context.Context, userEmail string) (string, apierrors.ApiError)
 	ResetPassword(ctx context.Context, userEmail string) (string, apierrors.ApiError)
+	SetUserValidated(ctx context.Context, uid string, isVerified bool) apierrors.ApiError
+	IsUserValidated(ctx context.Context, uid string) (bool, apierrors.ApiError)
 }
 
 func (fam firebaseAccountManager) VerificationEmail(ctx context.Context, userEmail string) (string, apierrors.ApiError) {
@@ -239,6 +217,40 @@ func (fam firebaseAccountManager) ResetPassword(ctx context.Context, userEmail s
 	}
 
 	return link, nil
+}
+
+func (fam firebaseAccountManager) SetUserValidated(ctx context.Context, uid string, isVerified bool) apierrors.ApiError {
+	claims := map[string]interface{}{userValidationKey: isVerified}
+
+	err := fbClient.AuthClient.SetCustomUserClaims(ctx, uid, claims)
+	if err != nil {
+		return apierrors.NewApiError(
+			"error on firebase user validation. ",
+			"set_custom_user_claims",
+			http.StatusInternalServerError,
+			apierrors.CauseList{err.Error()},
+		)
+	}
+
+	return nil
+}
+
+func (fam firebaseAccountManager) IsUserValidated(ctx context.Context, uid string) (bool, apierrors.ApiError) {
+	user, err := fbClient.AuthClient.GetUser(ctx, uid)
+	if err != nil {
+		return false, apierrors.NewApiError(
+			"error on firebase user validation.",
+			"get_user_error",
+			http.StatusInternalServerError,
+			apierrors.CauseList{err.Error()},
+		)
+	}
+
+	if value, ok := user.CustomClaims[userValidationKey].(bool); ok {
+		return value, nil
+	}
+
+	return false, nil
 }
 
 func NewServiceGetEmailFromUserID() GetEmailFromUserID {
