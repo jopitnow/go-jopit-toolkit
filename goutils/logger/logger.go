@@ -1,7 +1,3 @@
-/**
-* @author mnunez
- */
-
 package logger
 
 import (
