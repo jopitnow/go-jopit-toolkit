@@ -83,17 +83,12 @@ func (r *jopitLogger) setRequestValues(c *gin.Context, requestName string) {
 
 	userID, _ := c.Get("user_id")
 
-	jsonData, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		fmt.Println("Error formatting the json for the logger: ", err)
-	}
-
 	r.Values["request_authorization_header"] = fmt.Sprint(c.Request.Header.Get("Authorization") != "")
 	r.Values["request_user_id"] = fmt.Sprint(userID)
 	r.Values["request_name"] = requestName
 	r.Values["request_method"] = c.Request.Method
 	r.Values["request_body_size"] = strconv.Itoa(int(c.Request.ContentLength))
-	r.Values["request_body"] = string(jsonData)
+	r.Values["request_body"] = r.saveBody(c)
 	r.Values["request_url"] = c.Request.RequestURI
 	r.Values["request_url_host"] = c.Request.URL.Host
 	r.Values["request_url_remote_address"] = c.Request.RemoteAddr
