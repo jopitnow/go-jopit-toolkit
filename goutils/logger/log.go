@@ -165,7 +165,7 @@ func (r *requestLogger) BuildLogMessage() string {
 	message += r.getLogMessageByKey("response_error")
 	message += strings.Replace(r.getLogMessageByKey("message"), "\"", "'", -1)
 
-	b, err := json.Marshal(message)
+	b, err := json.Marshal(r.Log)
 	if err != nil {
 		fmt.Print("Error marshaling the log message into json format: ", err)
 	}
