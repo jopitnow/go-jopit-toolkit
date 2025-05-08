@@ -3,6 +3,7 @@ package logger
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -138,7 +139,13 @@ func (r *requestLogger) BuildLogMessage() string {
 	message += r.getLogMessageByKey("request_body")
 	message += r.getLogMessageByKey("response_error")
 	message += strings.Replace(r.getLogMessageByKey("message"), "\"", "'", -1)
-	return message
+
+	b, err := json.Marshal(message)
+	if err != nil {
+		fmt.Print("Error marshaling the log message into json format: ", err)
+	}
+
+	return string(b)
 }
 
 func (r *requestLogger) getLogMessageByKey(key string) string {
