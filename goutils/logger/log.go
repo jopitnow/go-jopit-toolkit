@@ -120,7 +120,7 @@ func (r *requestLogger) LogResponse(c *gin.Context) {
 		Headers:     c.Writer.Header(),
 	}
 
-	if c.Writer.Status() >= 400 || !logLimiter(r.LogBodyRatio) {
+	if c.Writer.Status() >= 400 {
 		responseError := r.BodyWriter.body.String()
 		r.Values["response_error"] = responseError
 		r.Log.Level = "ERROR"
