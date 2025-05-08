@@ -35,7 +35,8 @@ func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 	//record.AddAttributes(otellog.String("status", "successful"))
 
 	// Create logger from provider
-	LoggerProvider = provider.Logger(fmt.Sprintf("%s", "-logger", apiName))
+	serviceName := fmt.Sprintf("%s", "-logger", apiName)
+	LoggerProvider = provider.Logger(serviceName)
 
 	return provider.Shutdown, nil
 }
