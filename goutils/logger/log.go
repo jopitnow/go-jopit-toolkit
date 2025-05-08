@@ -11,7 +11,10 @@ import (
 	"strings"
 	"time"
 
+	otellog "go.opentelemetry.io/otel/log"
+
 	"github.com/gin-gonic/gin"
+	"github.com/jopitnow/go-jopit-toolkit/telemetry"
 )
 
 type contextKey string
@@ -23,12 +26,14 @@ type RequestLogger interface {
 }
 
 type requestLogger struct {
+	Severity     int32
 	Values       map[string]string
 	LogRatio     int32
 	LogBodyRatio int32
 	StartTime    time.Time
 	BodyWriter   *responseBodyWriter
 	BodyInput    string
+	Message      string
 }
 
 type responseBodyWriter struct {
@@ -64,25 +69,33 @@ func (r *requestLogger) getResponseTimeMilliseconds() int64 {
 func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 
 	userID, _ := c.Get("user_id")
-	xtraceid, _ := c.Get("X-Trace-ID")
-	xrequestid, _ := c.Get("X-Request-ID")
 
 	//r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
+	r.Values["request_authorization_header"] = fmt.Sprint(c.Request.Header.Get("Authorization") != "")
 	r.Values["request_user_id"] = fmt.Sprint(userID)
 	r.Values["request_name"] = requestName
 	r.Values["request_method"] = c.Request.Method
 	r.Values["request_body_size"] = strconv.Itoa(int(c.Request.ContentLength))
+	r.Values["request_body"] = r.saveBody(c)
 	r.Values["request_url"] = c.Request.RequestURI
-	r.Values["request_x_trace_id"] = fmt.Sprint(xtraceid)
-	r.Values["request_x_request_id"] = fmt.Sprint(xrequestid)
+	r.Values["request_url_host"] = c.Request.URL.Host
+	r.Values["request_url_remote_address"] = c.Request.RemoteAddr
+	r.Values["request_headers"] = fmt.Sprint(c.Request.Header)
+	r.Values["request_x_trace_id"] = telemetry.GetTraceIDFromContext(c.Request.Context())
+
 	r.BodyInput = r.saveBody(c)
 }
 
 func (r *requestLogger) LogResponse(c *gin.Context) {
+
 	responseStatus := strconv.Itoa(c.Writer.Status())
+
 	r.Values["response_time"] = strconv.FormatInt(r.getResponseTimeMilliseconds(), 10) + "ms"
 	r.Values["response_status"] = responseStatus
 	r.Values["response_status_group"] = responseStatus[0:1] + "XX"
+	r.Values["response_body"] = r.BodyWriter.body.String()
+	r.Values["response_headers"] = fmt.Sprint(c.Writer.Header())
+
 	if c.Writer.Status() >= 400 || !logLimiter(r.LogBodyRatio) {
 		r.Values["request_body"] = r.BodyInput
 	}
@@ -96,13 +109,15 @@ func (r *requestLogger) LogResponse(c *gin.Context) {
 }
 
 func (r *requestLogger) logInfo() {
-	message := r.BuildLogMessage()
-	Info(message)
+	r.Message = r.BuildLogMessage()
+	r.Severity = 9
+	Info(r.Message)
 }
 
 func (r *requestLogger) logError() {
-	message := r.BuildLogMessage()
-	Error(message, nil)
+	r.Message = r.BuildLogMessage()
+	r.Severity = 17
+	Error(r.Message, nil)
 }
 
 func (r *requestLogger) BuildLogMessage() string {
@@ -160,4 +175,17 @@ func GetFromContext(ctx context.Context) RequestLogger {
 		return rlogger
 	}
 	return lg
+}
+
+func (r *requestLogger) SendLogs(ctx context.Context) {
+	record := otellog.Record{}
+
+	for k, v := range r.Values {
+		record.AddAttributes(otellog.String(k, v))
+	}
+	record.SetTimestamp(r.StartTime)
+	record.SetBody(otellog.StringValue(r.Message))
+	record.SetSeverity(record.Severity())
+
+	telemetry.LoggerProvider.Emit(ctx, record)
 }
