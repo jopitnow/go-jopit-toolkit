@@ -90,6 +90,7 @@ func LoggerGrafanaMiddleware() gin.HandlerFunc {
 func (r *Response) SetResponseValues(c *gin.Context, t time.Time) {
 
 	recorder := &responseBodyWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	c.Writer = recorder
 	stringBody := recorder.body.String()
 
 	responseStatus := strconv.Itoa(c.Writer.Status())
