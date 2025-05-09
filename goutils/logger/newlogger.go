@@ -23,9 +23,7 @@ import (
 var logCount int
 var mu sync.Mutex // Mutex to prevent race conditions for counter
 
-var gCloudLogger grafanaCloudLogger = grafanaCloudLogger{
-	Provider: global.GetLoggerProvider().Logger(telemetry.Apiname),
-}
+var gCloudLogger grafanaCloudLogger = grafanaCloudLogger{}
 
 type grafanaCloudLogger struct {
 	Provider      otellog.Logger
@@ -36,6 +34,9 @@ type grafanaCloudLogger struct {
 }
 
 func InitLoggerJopitConfig() {
+
+	prov := global.GetLoggerProvider().Logger(telemetry.Apiname)
+	gCloudLogger.Provider = prov
 
 	loggingConfig := os.Getenv("LOGGING_CONFIG_LEVEL") //Which type of logs to make, ex.: 0 for all logs, 1 for FATAl and ERROR logs
 	samplinlLevel := os.Getenv("LOGGING_SAMPLING_LEVEL")
