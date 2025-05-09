@@ -56,6 +56,12 @@ type Response struct {
 func LoggerGrafanaMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		recorder := &responseBodyWriter{
+			body:           bytes.NewBufferString(""),
+			ResponseWriter: c.Writer,
+		}
+		c.Writer = recorder
+
 		t := time.Now()
 		t.Format("RFC1123")
 
@@ -71,7 +77,7 @@ func LoggerGrafanaMiddleware() gin.HandlerFunc {
 		c.Next()
 
 		response := Response{}
-		response.SetResponseValues(c, t)
+		response.SetResponseValues(c, t, recorder)
 
 		gCloudExporter.LogEntry.Response = response
 
@@ -87,11 +93,9 @@ func LoggerGrafanaMiddleware() gin.HandlerFunc {
 	}
 }
 
-func (r *Response) SetResponseValues(c *gin.Context, t time.Time) {
+func (r *Response) SetResponseValues(c *gin.Context, t time.Time, responseRecorder *responseBodyWriter) {
 
-	recorder := &responseBodyWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
-	c.Writer = recorder
-	stringBody := recorder.body.String()
+	stringBody := responseRecorder.body.String()
 
 	responseStatus := strconv.Itoa(c.Writer.Status())
 
