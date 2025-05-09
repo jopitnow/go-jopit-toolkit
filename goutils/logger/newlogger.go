@@ -92,13 +92,12 @@ func (r *Response) SetResponseValues(c *gin.Context, t time.Time) {
 	r.BodyWriter = &responseBodyWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
 
 	responseStatus := strconv.Itoa(c.Writer.Status())
-	r = &Response{
-		Status:      c.Writer.Status(),
-		StatusGroup: responseStatus[0:1] + "XX",
-		TimeMS:      strconv.FormatInt(time.Since(t).Milliseconds(), 10) + "ms",
-		Body:        r.BodyWriter.body.String(),
-		Headers:     c.Writer.Header(),
-	}
+
+	r.Status = c.Writer.Status()
+	r.StatusGroup = responseStatus[0:1] + "XX"
+	r.TimeMS = strconv.FormatInt(time.Since(t).Milliseconds(), 10) + "ms"
+	r.Body = r.BodyWriter.body.String()
+	r.Headers = c.Writer.Header()
 }
 
 func (r *Request) SetRequestValues(c *gin.Context) {
@@ -112,15 +111,13 @@ func (r *Request) SetRequestValues(c *gin.Context) {
 	reqHeaders := c.Request.Header
 	reqHeaders.Del("Authorization")
 
-	r = &Request{
-		Method:     c.Request.Method,
-		URL:        c.Request.RequestURI,
-		RemoteAddr: c.Request.RemoteAddr,
-		Body:       r.requestBodyToJSON(c),
-		Headers:    c.Request.Header,
-		UserID:     &userid,
-		AuthHeader: firebaseAuthExists,
-	}
+	r.Method = c.Request.Method
+	r.URL = c.Request.RequestURI
+	r.RemoteAddr = c.Request.RemoteAddr
+	r.Body = r.requestBodyToJSON(c)
+	r.Headers = c.Request.Header
+	r.UserID = &userid
+	r.AuthHeader = firebaseAuthExists
 }
 
 func (r *Request) requestBodyToJSON(c *gin.Context) string {
