@@ -7,10 +7,12 @@ package logger
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -19,6 +21,34 @@ import (
 var Log *logrus.Logger
 
 const tagMessageFormat = "%s - %s"
+
+type LogEntry struct {
+	Timestamp time.Time `json:"timestamp"`
+	Level     string    `json:"level"`
+	Message   string    `json:"message"`
+	Request   Request   `json:"request"`
+	Response  Response  `json:"response"`
+	TraceID   string    `json:"trace_id"`
+}
+
+type Request struct {
+	Method     string      `json:"method"`
+	URL        string      `json:"url"`
+	RemoteAddr string      `json:"remote_address"`
+	Name       string      `json:"name"`
+	Body       interface{} `json:"body"`
+	Headers    http.Header `json:"headers"`
+	UserID     *string     `json:"user_id"`
+	AuthHeader bool        `json:"authorization_header"`
+}
+
+type Response struct {
+	Status      int         `json:"status"`
+	StatusGroup string      `json:"status_group"`
+	TimeMS      string      `json:"time_ms"`
+	Body        interface{} `json:"body"`
+	Headers     http.Header `json:"headers"`
+}
 
 func InitLog(loggingPath, loggingFile, loggingLevel string) {
 	Log = logrus.New()

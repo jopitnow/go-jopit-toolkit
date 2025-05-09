@@ -35,6 +35,7 @@ type requestLogger struct {
 	BodyWriter   *responseBodyWriter
 	BodyInput    string
 	Message      string
+	Log          LogEntry
 }
 
 type responseBodyWriter struct {
@@ -70,10 +71,11 @@ func (r *requestLogger) getResponseTimeMilliseconds() int64 {
 func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 
 	userID, _ := c.Get("user_id")
+	userid := fmt.Sprint(userID)
 
 	//r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
 	r.Values["request_authorization_header"] = fmt.Sprint(c.Request.Header.Get("Authorization") != "")
-	r.Values["request_user_id"] = fmt.Sprint(userID)
+	r.Values["request_user_id"] = userid
 	r.Values["request_name"] = requestName
 	r.Values["request_method"] = c.Request.Method
 	r.Values["request_body_size"] = strconv.Itoa(int(c.Request.ContentLength))
@@ -83,6 +85,20 @@ func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 	r.Values["request_url_remote_address"] = c.Request.RemoteAddr
 	r.Values["request_headers"] = fmt.Sprint(c.Request.Header)
 	r.Values["request_x_trace_id"] = telemetry.GetTraceIDFromContext(c.Request.Context())
+
+	r.Log = LogEntry{
+		Timestamp: r.StartTime,
+		Request: Request{
+			Method:     c.Request.Method,
+			URL:        c.Request.RequestURI,
+			RemoteAddr: c.Request.RemoteAddr,
+			Name:       requestName,
+			Body:       r.saveBody(c),
+			Headers:    c.Request.Header,
+			UserID:     &userid,
+			AuthHeader: (c.Request.Header.Get("Authorization") != ""),
+		},
+	}
 
 	r.BodyInput = r.saveBody(c)
 }
@@ -97,14 +113,23 @@ func (r *requestLogger) LogResponse(c *gin.Context) {
 	r.Values["response_body"] = r.BodyWriter.body.String()
 	r.Values["response_headers"] = fmt.Sprint(c.Writer.Header())
 
-	if c.Writer.Status() >= 400 || !logLimiter(r.LogBodyRatio) {
-		r.Values["request_body"] = r.BodyInput
+	r.Log.Response = Response{
+		Status:      c.Writer.Status(),
+		StatusGroup: responseStatus[0:1] + "XX",
+		TimeMS:      strconv.FormatInt(r.getResponseTimeMilliseconds(), 10) + "ms",
+		Headers:     c.Writer.Header(),
 	}
+
 	if c.Writer.Status() >= 400 {
 		responseError := r.BodyWriter.body.String()
 		r.Values["response_error"] = responseError
+		r.Log.Level = "ERROR"
+		if c.Writer.Status() >= 500 {
+			r.Log.Level = "FATAL"
+		}
 		r.logError()
 	} else if !logLimiter(r.LogRatio) {
+		r.Log.Level = "INFO"
 		r.logInfo()
 	}
 }
@@ -140,7 +165,7 @@ func (r *requestLogger) BuildLogMessage() string {
 	message += r.getLogMessageByKey("response_error")
 	message += strings.Replace(r.getLogMessageByKey("message"), "\"", "'", -1)
 
-	b, err := json.Marshal(message)
+	b, err := json.Marshal(r.Log)
 	if err != nil {
 		fmt.Print("Error marshaling the log message into json format: ", err)
 	}
