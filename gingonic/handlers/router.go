@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jopitnow/go-jopit-toolkit/goauth"
 	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
+	"github.com/jopitnow/go-jopit-toolkit/goutils/logger"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -38,6 +39,9 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 			c.Request = c.Request.WithContext(context.Background())
 			c.Next()
 		})
+	}
+	if !conf.DisableGrafanaLogger {
+		router.Use(logger.LoggerGrafanaMiddleware())
 	}
 	if conf.EnableResponseCompressionSupport {
 		router.Use(gzip.Gzip(gzip.DefaultCompression))
@@ -87,6 +91,7 @@ type JopitRouterConfig struct {
 	DisableCancellationOnClientDisconnect bool
 	DisableCORS                           bool
 	DisableTracer                         bool
+	DisableGrafanaLogger                  bool
 }
 
 func noRouteHandler(c *gin.Context) {

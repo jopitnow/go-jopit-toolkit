@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	otellog "go.opentelemetry.io/otel/log"
-
 	"github.com/gin-gonic/gin"
 	"github.com/jopitnow/go-jopit-toolkit/telemetry"
 )
@@ -88,11 +86,11 @@ func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
 
 	r.Log = LogEntry{
 		Timestamp: r.StartTime,
+		TraceID:   telemetry.GetTraceIDFromContext(c.Request.Context()),
 		Request: Request{
 			Method:     c.Request.Method,
 			URL:        c.Request.RequestURI,
 			RemoteAddr: c.Request.RemoteAddr,
-			Name:       requestName,
 			Body:       r.saveBody(c),
 			Headers:    c.Request.Header,
 			UserID:     &userid,
@@ -207,17 +205,4 @@ func GetFromContext(ctx context.Context) RequestLogger {
 		return rlogger
 	}
 	return lg
-}
-
-func (r *requestLogger) SendLogs(ctx context.Context) {
-	record := otellog.Record{}
-
-	for k, v := range r.Values {
-		record.AddAttributes(otellog.String(k, v))
-	}
-	record.SetTimestamp(r.StartTime)
-	record.SetBody(otellog.StringValue(r.Message))
-	record.SetSeverity(record.Severity())
-
-	telemetry.LoggerProvider.Emit(ctx, record)
 }
