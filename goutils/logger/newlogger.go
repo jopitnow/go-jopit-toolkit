@@ -89,14 +89,15 @@ func LoggerGrafanaMiddleware() gin.HandlerFunc {
 
 func (r *Response) SetResponseValues(c *gin.Context, t time.Time) {
 
-	r.BodyWriter = &responseBodyWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	recorder := &responseBodyWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	stringBody := recorder.body.String()
 
 	responseStatus := strconv.Itoa(c.Writer.Status())
 
 	r.Status = c.Writer.Status()
 	r.StatusGroup = responseStatus[0:1] + "XX"
 	r.TimeMS = strconv.FormatInt(time.Since(t).Milliseconds(), 10) + "ms"
-	r.Body = r.BodyWriter.body.String()
+	r.Body = stringBody
 	r.Headers = c.Writer.Header()
 }
 
