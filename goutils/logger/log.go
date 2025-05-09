@@ -41,8 +41,9 @@ type responseBodyWriter struct {
 	body *bytes.Buffer
 }
 
-func (r responseBodyWriter) Write(b []byte) (int, error) {
+func (r *responseBodyWriter) Write(b []byte) (int, error) {
 	r.body.Write(b)
+	fmt.Println("Captured response:", r.body.String()) // Debug log
 	return r.ResponseWriter.Write(b)
 }
 
