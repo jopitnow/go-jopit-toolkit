@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	otellog "go.opentelemetry.io/otel/log"
-
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/log/global"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 )
 
-var LoggerProvider *otellog.Logger
+var Apiname string
 
 func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
@@ -27,10 +25,7 @@ func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 	provider := sdklog.NewLoggerProvider(sdklog.WithProcessor(processor))
 	global.SetLoggerProvider(provider)
 
-	// Create logger from provider
-	serviceName := fmt.Sprintf("%s", "-logger", apiName)
-	l := provider.Logger(serviceName)
-	LoggerProvider = &l
+	Apiname = apiName
 
 	return provider.Shutdown, nil
 }

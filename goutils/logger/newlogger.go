@@ -14,6 +14,7 @@ import (
 	"time"
 
 	otellog "go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/log/global"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jopitnow/go-jopit-toolkit/telemetry"
@@ -23,7 +24,7 @@ var logCount int
 var mu sync.Mutex // Mutex to prevent race conditions for counter
 
 var gCloudLogger grafanaCloudLogger = grafanaCloudLogger{
-	Provider: *telemetry.LoggerProvider,
+	Provider: global.GetLoggerProvider().Logger(telemetry.Apiname),
 }
 
 type grafanaCloudLogger struct {
@@ -233,7 +234,7 @@ func (g *grafanaCloudLogger) SendLogs(ctx context.Context) {
 	record.SetTimestamp(g.LogEntry.Timestamp)
 	record.SetBody(otellog.StringValue(string(logBytes)))
 
-	l := *telemetry.LoggerProvider
+	l := gCloudLogger.Provider
 	l.Emit(ctx, record)
 }
 
