@@ -113,6 +113,7 @@ func LoggerGrafanaMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		//to grab the response body
 		recorder := &responseBodyWriter{
 			body:           bytes.NewBufferString(""),
 			ResponseWriter: c.Writer,
@@ -146,10 +147,22 @@ func LoggerGrafanaMiddleware() gin.HandlerFunc {
 			gCloudLogger.LogEntry.Level = "INFO"
 		}
 
-		if gCloudLogger.LogEntry.Level == "INFO" && shouldLog(int(gCloudLogger.SamplingLevel)) {
-			gCloudLogger.SendLogs(c.Request.Context())
-			return
-		} else if gCloudLogger.LogEntry.Level != "INFO" {
+		if gCloudLogger.LogEntry.Level == "INFO" {
+
+			if gCloudLogger.LoggingConfig == 0 { //if the configLevel is 0 means that all logs have to be sent.
+
+				gCloudLogger.SendLogs(c.Request.Context())
+				return
+
+			} else if gCloudLogger.LoggingConfig == 1 { //if the configLevel is 0 only a percentage are sent. .
+
+				if shouldLog(int(gCloudLogger.SamplingLevel)) {
+					gCloudLogger.SendLogs(c.Request.Context())
+					return
+				}
+			}
+
+		} else if gCloudLogger.LogEntry.Level != "INFO" { //all FATAL and ERROR are meant to be sent at all times.
 			gCloudLogger.SendLogs(c.Request.Context())
 			return
 		}
