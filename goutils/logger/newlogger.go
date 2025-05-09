@@ -165,7 +165,6 @@ func LoggerGrafanaMiddleware() gin.HandlerFunc {
 
 		} else if gCloudLogger.LogEntry.Level != "INFO" { //all FATAL and ERROR are meant to be sent at all times.
 			gCloudLogger.SendLogs(c.Request.Context())
-			return
 		}
 
 	}
