@@ -40,9 +40,7 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 			c.Next()
 		})
 	}
-	if !conf.DisableGrafanaLogger {
-		router.Use(logger.LoggerGrafanaMiddleware())
-	}
+
 	if conf.EnableResponseCompressionSupport {
 		router.Use(gzip.Gzip(gzip.DefaultCompression))
 	}
@@ -66,6 +64,9 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 	}
 	if !conf.DisableTracer {
 		router.Use(otelgin.Middleware(ApiName + "-service"))
+	}
+	if !conf.DisableGrafanaLogger {
+		router.Use(logger.LoggerGrafanaMiddleware())
 	}
 
 	router.NoRoute(noRouteHandler)
