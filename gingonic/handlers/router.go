@@ -67,6 +67,8 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 	}
 	if !conf.DisableGrafanaLogger {
 		router.Use(logger.LoggerGrafanaMiddleware())
+	} else {
+		router.Use(logger.LoggerHandler())
 	}
 
 	router.NoRoute(noRouteHandler)

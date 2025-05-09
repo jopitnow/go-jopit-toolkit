@@ -3,7 +3,6 @@ package logger
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -13,7 +12,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jopitnow/go-jopit-toolkit/telemetry"
 )
 
 type contextKey string
@@ -25,15 +23,12 @@ type RequestLogger interface {
 }
 
 type requestLogger struct {
-	Severity     int32
 	Values       map[string]string
 	LogRatio     int32
 	LogBodyRatio int32
 	StartTime    time.Time
 	BodyWriter   *responseBodyWriter
 	BodyInput    string
-	Message      string
-	Log          LogEntry
 }
 
 type responseBodyWriter struct {
@@ -43,11 +38,10 @@ type responseBodyWriter struct {
 
 func (r *responseBodyWriter) Write(b []byte) (int, error) {
 	r.body.Write(b)
-	fmt.Println("Captured response:", r.body.String()) // Debug log
 	return r.ResponseWriter.Write(b)
 }
 
-func NewRequestLogger(c *gin.Context, requestName string, logRatio, logBodyRatio int32) *requestLogger {
+func NewRequestLogger(c *gin.Context, logRatio, logBodyRatio int32) *requestLogger {
 	w := &responseBodyWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
 	c.Writer = w
 	reqLogger := &requestLogger{
@@ -58,7 +52,7 @@ func NewRequestLogger(c *gin.Context, requestName string, logRatio, logBodyRatio
 		BodyWriter:   w,
 	}
 
-	reqLogger.setRequestValues(c, requestName)
+	reqLogger.setRequestValues(c)
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), requestLoggerKey, reqLogger))
 	return reqLogger
 }
@@ -67,82 +61,47 @@ func (r *requestLogger) getResponseTimeMilliseconds() int64 {
 	return time.Since(r.StartTime).Milliseconds()
 }
 
-func (r *requestLogger) setRequestValues(c *gin.Context, requestName string) {
+func (r *requestLogger) setRequestValues(c *gin.Context) {
 
 	userID, _ := c.Get("user_id")
-	userid := fmt.Sprint(userID)
+	xtraceid, _ := c.Get("X-Trace-ID")
+	xrequestid, _ := c.Get("X-Request-ID")
 
 	//r.Values["request_authorization"] = c.Request.Header.Get("Authorization")
-	r.Values["request_authorization_header"] = fmt.Sprint(c.Request.Header.Get("Authorization") != "")
-	r.Values["request_user_id"] = userid
-	r.Values["request_name"] = requestName
+	r.Values["request_user_id"] = fmt.Sprint(userID)
 	r.Values["request_method"] = c.Request.Method
 	r.Values["request_body_size"] = strconv.Itoa(int(c.Request.ContentLength))
-	r.Values["request_body"] = r.saveBody(c)
 	r.Values["request_url"] = c.Request.RequestURI
-	r.Values["request_url_host"] = c.Request.URL.Host
-	r.Values["request_url_remote_address"] = c.Request.RemoteAddr
-	r.Values["request_headers"] = fmt.Sprint(c.Request.Header)
-	r.Values["request_x_trace_id"] = telemetry.GetTraceIDFromContext(c.Request.Context())
-
-	r.Log = LogEntry{
-		Timestamp: r.StartTime,
-		TraceID:   telemetry.GetTraceIDFromContext(c.Request.Context()),
-		Request: Request{
-			Method:     c.Request.Method,
-			URL:        c.Request.RequestURI,
-			RemoteAddr: c.Request.RemoteAddr,
-			Body:       r.saveBody(c),
-			Headers:    c.Request.Header,
-			UserID:     &userid,
-			AuthHeader: (c.Request.Header.Get("Authorization") != ""),
-		},
-	}
-
+	r.Values["request_x_trace_id"] = fmt.Sprint(xtraceid)
+	r.Values["request_x_request_id"] = fmt.Sprint(xrequestid)
 	r.BodyInput = r.saveBody(c)
 }
 
 func (r *requestLogger) LogResponse(c *gin.Context) {
-
 	responseStatus := strconv.Itoa(c.Writer.Status())
-
 	r.Values["response_time"] = strconv.FormatInt(r.getResponseTimeMilliseconds(), 10) + "ms"
 	r.Values["response_status"] = responseStatus
 	r.Values["response_status_group"] = responseStatus[0:1] + "XX"
-	r.Values["response_body"] = r.BodyWriter.body.String()
-	r.Values["response_headers"] = fmt.Sprint(c.Writer.Header())
-
-	r.Log.Response = Response{
-		Status:      c.Writer.Status(),
-		StatusGroup: responseStatus[0:1] + "XX",
-		TimeMS:      strconv.FormatInt(r.getResponseTimeMilliseconds(), 10) + "ms",
-		Headers:     c.Writer.Header(),
+	if c.Writer.Status() >= 400 || !logLimiter(r.LogBodyRatio) {
+		r.Values["request_body"] = r.BodyInput
 	}
-
 	if c.Writer.Status() >= 400 {
 		responseError := r.BodyWriter.body.String()
 		r.Values["response_error"] = responseError
-		r.Log.Level = "ERROR"
-		if c.Writer.Status() >= 500 {
-			r.Log.Level = "FATAL"
-		}
 		r.logError()
 	} else if !logLimiter(r.LogRatio) {
-		r.Log.Level = "INFO"
 		r.logInfo()
 	}
 }
 
 func (r *requestLogger) logInfo() {
-	r.Message = r.BuildLogMessage()
-	r.Severity = 9
-	Info(r.Message)
+	message := r.BuildLogMessage()
+	Info(message)
 }
 
 func (r *requestLogger) logError() {
-	r.Message = r.BuildLogMessage()
-	r.Severity = 17
-	Error(r.Message, nil)
+	message := r.BuildLogMessage()
+	Error(message, nil)
 }
 
 func (r *requestLogger) BuildLogMessage() string {
@@ -163,13 +122,7 @@ func (r *requestLogger) BuildLogMessage() string {
 	message += r.getLogMessageByKey("request_body")
 	message += r.getLogMessageByKey("response_error")
 	message += strings.Replace(r.getLogMessageByKey("message"), "\"", "'", -1)
-
-	b, err := json.Marshal(r.Log)
-	if err != nil {
-		fmt.Print("Error marshaling the log message into json format: ", err)
-	}
-
-	return string(b)
+	return message
 }
 
 func (r *requestLogger) getLogMessageByKey(key string) string {
@@ -206,4 +159,12 @@ func GetFromContext(ctx context.Context) RequestLogger {
 		return rlogger
 	}
 	return lg
+}
+
+func LoggerHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		reqLogger := NewRequestLogger(c, 1500, 1500)
+		c.Next()
+		reqLogger.LogResponse(c)
+	}
 }

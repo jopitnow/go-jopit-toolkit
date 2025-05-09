@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	otellog "go.opentelemetry.io/otel/log"
@@ -16,13 +19,62 @@ import (
 	"github.com/jopitnow/go-jopit-toolkit/telemetry"
 )
 
-var gCloudExporter grafanaCloudExporter = grafanaCloudExporter{
-	Provider: telemetry.LoggerProvider,
+var logCount int
+var mu sync.Mutex // Mutex to prevent race conditions for counter
+
+var gCloudLogger grafanaCloudLogger = grafanaCloudLogger{
+	Provider: *telemetry.LoggerProvider,
 }
 
-type grafanaCloudExporter struct {
-	Provider otellog.Logger
-	LogEntry LogEntry
+type grafanaCloudLogger struct {
+	Provider      otellog.Logger
+	LogEntry      LogEntry
+	SamplingLevel float64
+	LoggingConfig int
+	Limiter       int
+}
+
+func InitLoggerJopitConfig() {
+
+	loggingConfig := os.Getenv("LOGGING_CONFIG_LEVEL") //Which type of logs to make, ex.: 0 for all logs, 1 for FATAl and ERROR logs
+	samplinlLevel := os.Getenv("LOGGING_SAMPLING_LEVEL")
+	limiter := os.Getenv("LOGGING_LIMITER")
+
+	lc, lcerr := strconv.Atoi(loggingConfig)
+	sl, slerr := strconv.ParseFloat(samplinlLevel, 32)
+	limit, limiterr := strconv.Atoi(limiter)
+
+	if lcerr != nil {
+		fmt.Println("WARNING: error casting LOGGING_CONFIG_LEVEL to int, implementing default value for LOGGING_CONFIG_LEVEL: 1")
+		lc = 1
+	}
+
+	if slerr != nil {
+		fmt.Println("WARNING: error casting LOGGING_SAMPLING_LEVEL to int, implementing default value for LOGGING_SAMPLING_LEVEL: 0.1")
+		sl = 0.1
+	}
+
+	if limiterr != nil {
+		fmt.Println("WARNING: error casting LOGGING_LIMITER to int, implementing default value for LOGGING_LIMITER: 1500")
+		sl = 500
+	}
+
+	if lc < 0 || lc > 1 {
+		fmt.Println("WARNING: invalid LOGGING_CONFIG_LEVEL value, implementing default value for LOGGING_CONFIG_LEVEL")
+		lc = 1
+	}
+
+	if sl < 0 || sl > 1 {
+		fmt.Println("WARNING: invalid LOGGING_SAMPLING_LEVEL value, implementing default value for LOGGING_SAMPLING_LEVEL")
+		sl = 0.1
+	}
+
+	fmt.Println("Logging Mode:", lc)
+	fmt.Println("Sampling Level:", sl)
+
+	gCloudLogger.LoggingConfig = lc
+	gCloudLogger.SamplingLevel = sl
+	gCloudLogger.Limiter = limit
 }
 
 type LogEntry struct {
@@ -56,6 +108,11 @@ type Response struct {
 func LoggerGrafanaMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		if getLogCount() >= gCloudLogger.Limiter {
+			fmt.Println("WARNING: limit for logs reached!!")
+			return
+		}
+
 		recorder := &responseBodyWriter{
 			body:           bytes.NewBufferString(""),
 			ResponseWriter: c.Writer,
@@ -65,31 +122,38 @@ func LoggerGrafanaMiddleware() gin.HandlerFunc {
 		t := time.Now()
 		t.Format("RFC1123")
 
-		gCloudExporter.LogEntry = LogEntry{}
-		gCloudExporter.LogEntry.Timestamp = t
-		gCloudExporter.LogEntry.TraceID = telemetry.GetTraceIDFromContext(c.Request.Context())
+		gCloudLogger.LogEntry = LogEntry{}
+		gCloudLogger.LogEntry.Timestamp = t
+		gCloudLogger.LogEntry.TraceID = telemetry.GetTraceIDFromContext(c.Request.Context())
 
 		request := Request{}
 		request.SetRequestValues(c)
 
-		gCloudExporter.LogEntry.Request = request
+		gCloudLogger.LogEntry.Request = request
 
 		c.Next()
 
 		response := Response{}
 		response.SetResponseValues(c, t, recorder)
 
-		gCloudExporter.LogEntry.Response = response
+		gCloudLogger.LogEntry.Response = response
 
 		if c.Writer.Status() >= 400 {
-			gCloudExporter.LogEntry.Level = "ERROR"
+			gCloudLogger.LogEntry.Level = "ERROR"
 		} else if c.Writer.Status() >= 500 {
-			gCloudExporter.LogEntry.Level = "FATAL"
+			gCloudLogger.LogEntry.Level = "FATAL"
 		} else {
-			gCloudExporter.LogEntry.Level = "INFO"
+			gCloudLogger.LogEntry.Level = "INFO"
 		}
 
-		gCloudExporter.SendLogs(c.Request.Context())
+		if gCloudLogger.LogEntry.Level == "INFO" && shouldLog(int(gCloudLogger.SamplingLevel)) {
+			gCloudLogger.SendLogs(c.Request.Context())
+			return
+		} else if gCloudLogger.LogEntry.Level != "INFO" {
+			gCloudLogger.SendLogs(c.Request.Context())
+			return
+		}
+
 	}
 }
 
@@ -136,7 +200,7 @@ func (r *Request) requestBodyToJSON(c *gin.Context) string {
 	return string(bodyBytes)
 }
 
-func (g *grafanaCloudExporter) SendLogs(ctx context.Context) {
+func (g *grafanaCloudLogger) SendLogs(ctx context.Context) {
 
 	record := otellog.Record{}
 
@@ -156,5 +220,22 @@ func (g *grafanaCloudExporter) SendLogs(ctx context.Context) {
 	record.SetTimestamp(g.LogEntry.Timestamp)
 	record.SetBody(otellog.StringValue(string(logBytes)))
 
-	telemetry.LoggerProvider.Emit(ctx, record)
+	l := *telemetry.LoggerProvider
+	l.Emit(ctx, record)
+}
+
+func shouldLog(percentage int) bool {
+	return rand.Intn(100) < percentage*100
+}
+
+func incrementLogCount() {
+	mu.Lock()
+	logCount++
+	mu.Unlock()
+}
+
+func getLogCount() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return logCount
 }

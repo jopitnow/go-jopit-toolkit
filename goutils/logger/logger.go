@@ -18,9 +18,13 @@ import (
 
 var Log *logrus.Logger
 
-const tagMessageFormat = "%s - %s"
+const (
+	tagMessageFormat = "%s - %s"
+	loggingPath      = "/var/log/jopit"
+	loggingFile      = "jopit_api.log"
+)
 
-func InitLog(loggingPath, loggingFile, loggingLevel string) {
+func InitLog() {
 	Log = logrus.New()
 	// Creating log dir if not exists
 	if _, err := os.Stat(loggingPath); os.IsNotExist(err) {
@@ -48,10 +52,9 @@ func InitLog(loggingPath, loggingFile, loggingLevel string) {
 	Log.Formatter.(*prefixed.TextFormatter).FullTimestamp = true
 
 	// Only log the warning severity or above.
-	lvl, err := logrus.ParseLevel(loggingLevel)
-	if err != nil {
-		lvl = logrus.InfoLevel
-	}
+
+	lvl := logrus.InfoLevel
+
 	Log.SetLevel(lvl)
 }
 
