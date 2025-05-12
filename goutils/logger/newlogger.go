@@ -208,7 +208,10 @@ func (r *Request) SetRequestValues(c *gin.Context) {
 func (r *Request) requestBodyToJSON(c *gin.Context) string {
 	var bodyBytes []byte
 	if c.Request.Body != nil {
-		bodyBytes, _ = io.ReadAll(c.Request.Body)
+		bodyBytes, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			fmt.Println("WARNING: error reading the c.Request.Body: ", err)
+		}
 		// Restore the io.ReadCloser to its original state
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
