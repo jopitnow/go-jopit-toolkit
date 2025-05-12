@@ -3,6 +3,7 @@ package telemetry
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/log/global"
@@ -22,7 +23,8 @@ func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 
 	resource := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceNameKey.String(apiName), // Ensure service name is set
+		semconv.ServiceNameKey.String(apiName),
+		semconv.ServiceVersionKey.String(os.Getenv("API_VERSION")),
 	)
 
 	// Create log provider
