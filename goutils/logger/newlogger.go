@@ -142,7 +142,7 @@ func LoggerGrafanaMiddleware() gin.HandlerFunc {
 
 		gcl.LogEntry.Response = response
 
-		if c.Writer.Status() >= 400 {
+		if c.Writer.Status() >= 400 && c.Writer.Status() < 500 {
 			gcl.LogEntry.Level = "ERROR"
 		} else if c.Writer.Status() >= 500 {
 			gcl.LogEntry.Level = "FATAL"
