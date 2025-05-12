@@ -3,15 +3,14 @@ package telemetry
 import (
 	"context"
 	"fmt"
-
-	otellog "go.opentelemetry.io/otel/log"
+	"os"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/log/global"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
-
-var LoggerProvider otellog.Logger
 
 func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
@@ -22,21 +21,16 @@ func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 		return nil, fmt.Errorf("WARNING: error initiating the otlp exporter for logs: ", err.Error())
 	}
 
+	resource := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String(apiName),
+		semconv.ServiceVersionKey.String(os.Getenv("API_VERSION")),
+	)
+
 	// Create log provider
 	processor := sdklog.NewBatchProcessor(exporter)
-	provider := sdklog.NewLoggerProvider(sdklog.WithProcessor(processor))
+	provider := sdklog.NewLoggerProvider(sdklog.WithProcessor(processor), sdklog.WithResource(resource))
 	global.SetLoggerProvider(provider)
-
-	// Emit a log record
-	//record := otellog.Record{}
-	//record.SetSeverity(otellog.SeverityInfo)                        // Set severity level
-	//record.SetTimestamp(time.Now())                                 // Set timestamp
-	//record.SetBody(otellog.StringValue("OTLP logging is working!")) // Log message
-	//record.AddAttributes(otellog.String("status", "successful"))
-
-	// Create logger from provider
-	serviceName := fmt.Sprintf("%s", "-logger", apiName)
-	LoggerProvider = provider.Logger(serviceName)
 
 	return provider.Shutdown, nil
 }
