@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jopitnow/go-jopit-toolkit/goauth"
 	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
+	"github.com/jopitnow/go-jopit-toolkit/goutils/logger"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -63,6 +64,9 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 	if !conf.DisableTracer {
 		router.Use(otelgin.Middleware(ApiName + "-service"))
 	}
+	if !conf.DisableLogs {
+		router.Use(logger.LoggerGrafanaMiddleware())
+	}
 
 	router.NoRoute(noRouteHandler)
 	return router
@@ -87,6 +91,7 @@ type JopitRouterConfig struct {
 	DisableCancellationOnClientDisconnect bool
 	DisableCORS                           bool
 	DisableTracer                         bool
+	DisableLogs                           bool
 }
 
 func noRouteHandler(c *gin.Context) {
