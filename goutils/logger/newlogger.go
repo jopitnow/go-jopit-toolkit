@@ -14,6 +14,7 @@ import (
 	"time"
 
 	otellog "go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/log/global"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jopitnow/go-jopit-toolkit/telemetry"
@@ -22,9 +23,7 @@ import (
 var logCount int
 var mu sync.Mutex // Mutex to prevent race conditions for counter
 
-var gcl grafanaCloudLogger = grafanaCloudLogger{
-	Provider: telemetry.LoggerProvider,
-}
+var gcl *grafanaCloudLogger = &grafanaCloudLogger{}
 
 type grafanaCloudLogger struct {
 	Provider      otellog.Logger
@@ -62,7 +61,7 @@ type Response struct {
 	BodyWriter  *responseBodyWriter `json:"-"`
 }
 
-func InitLoggerJopitConfig() {
+func InitLoggerJopitConfig(apiname string) {
 
 	loggingConfig := os.Getenv("LOGGING_CONFIG_LEVEL") //Which type of logs to make, ex.: 0 for all logs, 1 for FATAl and ERROR logs
 	samplinlLevel := os.Getenv("LOGGING_SAMPLING_LEVEL")
@@ -103,7 +102,12 @@ func InitLoggerJopitConfig() {
 	gcl.LoggingConfig = lc
 	gcl.SamplingLevel = sl
 	gcl.Limiter = limit
+
+	lp := global.GetLoggerProvider()
+
+	gcl.Provider = lp.Logger(apiname)
 }
+
 func LoggerGrafanaMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
