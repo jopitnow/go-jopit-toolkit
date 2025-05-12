@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	otellog "go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/sdk/log"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/log/global"
-	sdklog "go.opentelemetry.io/otel/sdk/log"
 )
 
 var LoggerProvider otellog.Logger
@@ -22,10 +23,16 @@ func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 		return nil, fmt.Errorf("WARNING: error initiating the otlp exporter for logs: ", err.Error())
 	}
 
-	// Create log provider
-	processor := sdklog.NewBatchProcessor(exporter)
-	provider := sdklog.NewLoggerProvider(sdklog.WithProcessor(processor))
-	global.SetLoggerProvider(provider)
+	// Create the logger provider
+	lp := log.NewLoggerProvider(
+		log.WithProcessor(
+			log.NewBatchProcessor(exporter),
+		),
+	)
+
+	var _ sdklog.Exporter = (*otlploghttp.Exporter)(nil)
+
+	global.SetLoggerProvider(lp)
 
 	// Emit a log record
 	//record := otellog.Record{}
@@ -36,7 +43,7 @@ func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 
 	// Create logger from provider
 	serviceName := fmt.Sprintf("%s-logger", apiName)
-	LoggerProvider = provider.Logger(serviceName)
+	LoggerProvider = lp.Logger(serviceName)
 
-	return provider.Shutdown, nil
+	return lp.Shutdown, nil
 }
