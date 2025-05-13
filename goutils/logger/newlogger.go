@@ -83,7 +83,7 @@ func InitLoggerJopitConfig(apiname string) {
 
 	if limiterr != nil {
 		fmt.Println("WARNING: error casting LOGGING_LIMITER to int, implementing default value for LOGGING_LIMITER: 1500")
-		sl = 500
+		sl = 1500
 	}
 
 	if lc < 0 || lc > 1 {

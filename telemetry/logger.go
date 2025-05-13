@@ -16,7 +16,7 @@ func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
 
 	// Configure OTLP log exporter
-	exporter, err := otlploghttp.New(ctx, otlploghttp.WithEndpointURL("http://localhost:4318/v1/logs"))
+	exporter, err := otlploghttp.New(ctx, otlploghttp.WithEndpointURL("http://jopit-otel-exporter:4318/v1/logs"))
 	if err != nil {
 		return nil, fmt.Errorf("WARNING: error initiating the otlp exporter for logs: ", err.Error())
 	}
@@ -25,6 +25,7 @@ func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String(apiName),
 		semconv.ServiceVersionKey.String(os.Getenv("API_VERSION")),
+		semconv.DeploymentEnvironmentKey.String(os.ExpandEnv("ENVIRONMENT")),
 	)
 
 	// Create log provider
