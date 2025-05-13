@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -17,8 +18,7 @@ import (
 func InitTracerExporter(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
 
-	// Configure the exporter with the Tempo endpoint and authentication header.
-	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithTimeout(10*time.Second), otlptracehttp.WithEndpointURL("http://localhost:4318/v1/traces"))
+	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithTimeout(10*time.Second), otlptracehttp.WithEndpointURL("http://jopit-otel-exporter:4318/v1/traces"))
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,8 @@ func InitTracerExporter(apiName string) (func(context.Context) error, error) {
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			attribute.String("service.name", apiName+"-api"),
-			attribute.String("environment", "local"), //to-do
+			attribute.String("service.version", os.Getenv("API_VERSION")),
+			attribute.String("deployment.environment", os.Getenv("ENVIRONMENT")), //to-do
 		),
 	)
 	if err != nil {
