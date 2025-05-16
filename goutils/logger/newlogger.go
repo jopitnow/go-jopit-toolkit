@@ -256,7 +256,7 @@ func getLogCount() int {
 // Function that retrieves the Headers with the AuthHeader removed
 func setHeadersToBeLogged(c *gin.Context) http.Header {
 	//Deleted the Auth from the header request for security porpouses.
-	reqHeaders := c.Request.Header
+	reqHeaders := c.Request.Header.Clone()
 	reqHeaders.Del("Authorization")
 
 	return reqHeaders
