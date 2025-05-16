@@ -182,7 +182,7 @@ func (r *Response) SetResponseValues(c *gin.Context, t time.Time, responseRecord
 	r.StatusGroup = responseStatus[0:1] + "XX"
 	r.TimeMS = strconv.FormatInt(time.Since(t).Milliseconds(), 10) + "ms"
 	r.Body = stringBody
-	r.Headers = c.Writer.Header()
+	r.Headers = setHeadersToBeLogged(c)
 }
 
 func (r *Request) SetRequestValues(c *gin.Context) {
@@ -192,15 +192,11 @@ func (r *Request) SetRequestValues(c *gin.Context) {
 
 	firebaseAuthExists := (c.Request.Header.Get("Authorization") != "")
 
-	//Deleted the Auth from the header request for security porpouses.
-	reqHeaders := c.Request.Header
-	reqHeaders.Del("Authorization")
-
 	r.Method = c.Request.Method
 	r.URL = c.Request.RequestURI
 	r.RemoteAddr = c.Request.RemoteAddr
 	r.Body = r.requestBodyToJSON(c)
-	r.Headers = c.Request.Header
+	r.Headers = setHeadersToBeLogged(c)
 	r.UserID = &userid
 	r.AuthHeader = firebaseAuthExists
 }
@@ -255,4 +251,13 @@ func getLogCount() int {
 	mu.Lock()
 	defer mu.Unlock()
 	return logCount
+}
+
+// Function that retrieves the Headers with the AuthHeader removed
+func setHeadersToBeLogged(c *gin.Context) http.Header {
+	//Deleted the Auth from the header request for security porpouses.
+	reqHeaders := c.Request.Header
+	reqHeaders.Del("Authorization")
+
+	return reqHeaders
 }
