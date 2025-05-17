@@ -96,13 +96,16 @@ func AuthWithFirebase() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if header == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, fmt.Errorf("missing Authorization Header"))
+			err := fmt.Errorf("missing Authorization Header")
+			c.Error(err)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, err.Error())
 			return
 		}
 
 		idToken := strings.TrimSpace(strings.Replace(header, "Bearer", "", 1))
 		decodedToken, err := fbClient.AuthClient.VerifyIDToken(context.Background(), idToken)
 		if err != nil {
+			c.Error(err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, err.Error())
 			return
 		}
