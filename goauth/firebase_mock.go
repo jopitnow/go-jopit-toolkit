@@ -11,6 +11,8 @@ type FirebaseAccountManagerMock struct {
 	HandleResetPassword     func(ctx context.Context, userEmail string) (string, apierrors.ApiError)
 	HandleSetUserValidated  func(ctx context.Context, uid string, isVerified bool) apierrors.ApiError
 	HandleIsUserValidated   func(ctx context.Context, uid string) (bool, apierrors.ApiError)
+	HandleSetUserSubscribed func(ctx context.Context, uid string, isSubscribed bool) apierrors.ApiError
+	HandleIsUserSubscribed  func(ctx context.Context, uid string) (bool, apierrors.ApiError)
 	Spy                     bool
 }
 
@@ -50,6 +52,24 @@ func (mock *FirebaseAccountManagerMock) IsUserValidated(ctx context.Context, uid
 	if mock.HandleIsUserValidated != nil {
 		mock.Spy = true
 		return mock.HandleIsUserValidated(ctx, uid)
+	}
+	return false, nil
+}
+
+func (mock *FirebaseAccountManagerMock) SetUserSubscribed(ctx context.Context, uid string, isVerified bool) apierrors.ApiError {
+	mock.Spy = false
+	if mock.HandleSetUserSubscribed != nil {
+		mock.Spy = true
+		return mock.HandleSetUserSubscribed(ctx, uid, isVerified)
+	}
+	return nil
+}
+
+func (mock *FirebaseAccountManagerMock) IsUserSubscribed(ctx context.Context, uid string) (bool, apierrors.ApiError) {
+	mock.Spy = false
+	if mock.HandleIsUserSubscribed != nil {
+		mock.Spy = true
+		return mock.HandleIsUserSubscribed(ctx, uid)
 	}
 	return false, nil
 }

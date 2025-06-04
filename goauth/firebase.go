@@ -21,10 +21,11 @@ import (
 type headerKey string
 
 const (
-	UserIDMock                           = "TEST-MOCK-USER"
-	FirebaseAuthHeader firebaseHeaderKey = "Authorization"
-	FirebaseUserID     firebaseUserID    = "user_id"
-	userValidationKey  string            = "kyc_verified"
+	UserIDMock                            = "TEST-MOCK-USER"
+	FirebaseAuthHeader  firebaseHeaderKey = "Authorization"
+	FirebaseUserID      firebaseUserID    = "user_id"
+	userValidationKey   string            = "kyc_verified"
+	userSubscriptionKey string            = "subscription_active"
 )
 
 var (
@@ -200,6 +201,8 @@ type FirebaseAccountManager interface {
 	ResetPassword(ctx context.Context, userEmail string) (string, apierrors.ApiError)
 	SetUserValidated(ctx context.Context, uid string, isVerified bool) apierrors.ApiError
 	IsUserValidated(ctx context.Context, uid string) (bool, apierrors.ApiError)
+	SetUserSubscribed(ctx context.Context, uid string, isSubscribed bool) apierrors.ApiError
+	IsUserSubscribed(ctx context.Context, uid string) (bool, apierrors.ApiError)
 }
 
 func (fam firebaseAccountManager) VerificationEmail(ctx context.Context, userEmail string) (string, apierrors.ApiError) {
@@ -250,6 +253,40 @@ func (fam firebaseAccountManager) IsUserValidated(ctx context.Context, uid strin
 	}
 
 	if value, ok := user.CustomClaims[userValidationKey].(bool); ok {
+		return value, nil
+	}
+
+	return false, nil
+}
+
+func (fam firebaseAccountManager) SetUserSubscribed(ctx context.Context, uid string, isSubscribed bool) apierrors.ApiError {
+	claims := map[string]interface{}{userSubscriptionKey: isSubscribed}
+
+	err := fbClient.AuthClient.SetCustomUserClaims(ctx, uid, claims)
+	if err != nil {
+		return apierrors.NewApiError(
+			"error on firebase subscription settle.",
+			"set_subscription_status_error",
+			http.StatusInternalServerError,
+			apierrors.CauseList{err.Error()},
+		)
+	}
+
+	return nil
+}
+
+func (fam firebaseAccountManager) IsUserSubscribed(ctx context.Context, uid string) (bool, apierrors.ApiError) {
+	user, err := fbClient.AuthClient.GetUser(ctx, uid)
+	if err != nil {
+		return false, apierrors.NewApiError(
+			"error on firebase subscription status.",
+			"subscription_status_error",
+			http.StatusInternalServerError,
+			apierrors.CauseList{err.Error()},
+		)
+	}
+
+	if value, ok := user.CustomClaims[userSubscriptionKey].(bool); ok {
 		return value, nil
 	}
 
