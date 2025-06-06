@@ -364,9 +364,10 @@ type getEmailFromUserId struct {
 
 type GetEmailFromUserID interface {
 	GetEmailFromUserID(ctx context.Context) (string, apierrors.ApiError)
+	GetEmailByUserID(ctx context.Context, uid string) (string, apierrors.ApiError)
 }
 
-func (getemail getEmailFromUserId) GetEmailFromUserID(ctx context.Context) (string, apierrors.ApiError) {
+func (e getEmailFromUserId) GetEmailFromUserID(ctx context.Context) (string, apierrors.ApiError) {
 
 	userID := ctx.Value(FirebaseUserID)
 	if userID == nil {
@@ -381,7 +382,17 @@ func (getemail getEmailFromUserId) GetEmailFromUserID(ctx context.Context) (stri
 	userEmail := userRecord.UserInfo.Email
 
 	return userEmail, nil
+}
 
+func (e getEmailFromUserId) GetEmailByUserID(ctx context.Context, uid string) (string, apierrors.ApiError) {
+	userRecord, err := fbClient.AuthClient.GetUser(ctx, uid)
+	if err != nil {
+		return "", apierrors.NewApiError(err.Error(), "internal_server_error", http.StatusInternalServerError, apierrors.CauseList{})
+	}
+
+	userEmail := userRecord.UserInfo.Email
+
+	return userEmail, nil
 }
 
 type JopitUser struct {
