@@ -25,7 +25,7 @@ const (
 	FirebaseAuthHeader  firebaseHeaderKey = "Authorization"
 	FirebaseUserID      firebaseUserID    = "user_id"
 	userValidationKey   string            = "kyc_verified"
-	userSubscriptionKey string            = "subscription_active"
+	userSubscriptionKey string            = "subscription_id"
 )
 
 var (
@@ -201,8 +201,9 @@ type FirebaseAccountManager interface {
 	ResetPassword(ctx context.Context, userEmail string) (string, apierrors.ApiError)
 	SetUserValidated(ctx context.Context, uid string, isVerified bool) apierrors.ApiError
 	IsUserValidated(ctx context.Context, uid string) (bool, apierrors.ApiError)
-	SetUserSubscribed(ctx context.Context, uid string, isSubscribed bool) apierrors.ApiError
-	IsUserSubscribed(ctx context.Context, uid string) (bool, apierrors.ApiError)
+	SetUserSubscribed(ctx context.Context, uid string, subscription string) apierrors.ApiError
+	IsUserSubscribed(ctx context.Context, uid string) (*string, apierrors.ApiError)
+	RemoveUserSubscription(ctx context.Context, uid string) apierrors.ApiError
 }
 
 func (fam firebaseAccountManager) VerificationEmail(ctx context.Context, userEmail string) (string, apierrors.ApiError) {
@@ -226,9 +227,7 @@ func (fam firebaseAccountManager) ResetPassword(ctx context.Context, userEmail s
 }
 
 func (fam firebaseAccountManager) SetUserValidated(ctx context.Context, uid string, isVerified bool) apierrors.ApiError {
-	claims := map[string]interface{}{userValidationKey: isVerified}
-
-	err := fbClient.AuthClient.SetCustomUserClaims(ctx, uid, claims)
+	err := fam.updateCustomClaims(ctx, uid, map[string]interface{}{userValidationKey: isVerified})
 	if err != nil {
 		return apierrors.NewApiError(
 			"error on firebase user validation. ",
@@ -242,7 +241,7 @@ func (fam firebaseAccountManager) SetUserValidated(ctx context.Context, uid stri
 }
 
 func (fam firebaseAccountManager) IsUserValidated(ctx context.Context, uid string) (bool, apierrors.ApiError) {
-	user, err := fbClient.AuthClient.GetUser(ctx, uid)
+	user, err := fam.AuthClient.GetUser(ctx, uid)
 	if err != nil {
 		return false, apierrors.NewApiError(
 			"error on firebase user validation.",
@@ -259,10 +258,8 @@ func (fam firebaseAccountManager) IsUserValidated(ctx context.Context, uid strin
 	return false, nil
 }
 
-func (fam firebaseAccountManager) SetUserSubscribed(ctx context.Context, uid string, isSubscribed bool) apierrors.ApiError {
-	claims := map[string]interface{}{userSubscriptionKey: isSubscribed}
-
-	err := fbClient.AuthClient.SetCustomUserClaims(ctx, uid, claims)
+func (fam firebaseAccountManager) SetUserSubscribed(ctx context.Context, uid string, subscription string) apierrors.ApiError {
+	err := fam.updateCustomClaims(ctx, uid, map[string]interface{}{userSubscriptionKey: subscription})
 	if err != nil {
 		return apierrors.NewApiError(
 			"error on firebase subscription settle.",
@@ -275,10 +272,10 @@ func (fam firebaseAccountManager) SetUserSubscribed(ctx context.Context, uid str
 	return nil
 }
 
-func (fam firebaseAccountManager) IsUserSubscribed(ctx context.Context, uid string) (bool, apierrors.ApiError) {
-	user, err := fbClient.AuthClient.GetUser(ctx, uid)
+func (fam firebaseAccountManager) IsUserSubscribed(ctx context.Context, uid string) (*string, apierrors.ApiError) {
+	user, err := fam.AuthClient.GetUser(ctx, uid)
 	if err != nil {
-		return false, apierrors.NewApiError(
+		return nil, apierrors.NewApiError(
 			"error on firebase subscription status.",
 			"subscription_status_error",
 			http.StatusInternalServerError,
@@ -286,11 +283,75 @@ func (fam firebaseAccountManager) IsUserSubscribed(ctx context.Context, uid stri
 		)
 	}
 
-	if value, ok := user.CustomClaims[userSubscriptionKey].(bool); ok {
-		return value, nil
+	if value, ok := user.CustomClaims[userSubscriptionKey].(string); ok {
+		return &value, nil
 	}
 
-	return false, nil
+	return nil, nil
+}
+
+func (fam firebaseAccountManager) RemoveUserSubscription(ctx context.Context, uid string) apierrors.ApiError {
+	user, err := fbClient.AuthClient.GetUser(ctx, uid)
+	if err != nil {
+		return apierrors.NewApiError(
+			"error retrieving user to remove subscription.",
+			"get_user_error",
+			http.StatusInternalServerError,
+			apierrors.CauseList{err.Error()},
+		)
+	}
+
+	claims := make(map[string]interface{})
+	for k, v := range user.CustomClaims {
+		claims[k] = v
+	}
+
+	delete(claims, userSubscriptionKey)
+
+	err = fam.AuthClient.SetCustomUserClaims(ctx, uid, claims)
+	if err != nil {
+		return apierrors.NewApiError(
+			"error removing user subscription.",
+			"remove_subscription_error",
+			http.StatusInternalServerError,
+			apierrors.CauseList{err.Error()},
+		)
+	}
+
+	return nil
+}
+
+func (fam firebaseAccountManager) updateCustomClaims(ctx context.Context, uid string, updates map[string]interface{}) apierrors.ApiError {
+	user, err := fam.AuthClient.GetUser(ctx, uid)
+	if err != nil {
+		return apierrors.NewApiError(
+			"failed to retrieve user",
+			"get_user_error",
+			http.StatusInternalServerError,
+			apierrors.CauseList{err.Error()},
+		)
+	}
+
+	claims := make(map[string]interface{})
+	for k, v := range user.CustomClaims {
+		claims[k] = v
+	}
+
+	for k, v := range updates {
+		claims[k] = v
+	}
+
+	err = fbClient.AuthClient.SetCustomUserClaims(ctx, uid, claims)
+	if err != nil {
+		return apierrors.NewApiError(
+			"failed to update custom claims",
+			"set_custom_claims_error",
+			http.StatusInternalServerError,
+			apierrors.CauseList{err.Error()},
+		)
+	}
+
+	return nil
 }
 
 func NewServiceGetEmailFromUserID() GetEmailFromUserID {
