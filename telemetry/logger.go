@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/log/global"
@@ -21,11 +22,16 @@ func InitLoggerExporter(apiName string) (func(context.Context) error, error) {
 		return nil, fmt.Errorf("WARNING: error initiating the otlp exporter for logs: ", err.Error())
 	}
 
+	parts := strings.Split(os.Getenv("DEPLOY_ENVIRONMENT"), "-")
+
+	env := parts[0]
+	version := parts[1]
+
 	resource := resource.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String(apiName),
-		semconv.ServiceVersionKey.String(os.Getenv("API_VERSION")),
-		semconv.DeploymentEnvironmentKey.String(os.ExpandEnv("ENVIRONMENT")),
+		semconv.ServiceVersionKey.String(version),
+		semconv.DeploymentEnvironmentKey.String(env),
 	)
 
 	// Create log provider

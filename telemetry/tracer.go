@@ -3,6 +3,7 @@ package telemetry
 import (
 	"context"
 	"os"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -23,12 +24,17 @@ func InitTracerExporter(apiName string) (func(context.Context) error, error) {
 		return nil, err
 	}
 
+	parts := strings.Split(os.Getenv("DEPLOY_ENVIRONMENT"), "-")
+
+	env := parts[0]
+	version := parts[1]
+
 	// Optionally define a resource to add attributes like service.name.
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			attribute.String("service.name", apiName+"-api"),
-			attribute.String("service.version", os.Getenv("API_VERSION")),
-			attribute.String("deployment.environment", os.Getenv("ENVIRONMENT")), //to-do
+			attribute.String("service.version", version),
+			attribute.String("deployment.environment", env), //to-do
 		),
 	)
 	if err != nil {
