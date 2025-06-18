@@ -1,0 +1,56 @@
+name: Trigger API Request
+
+on:
+  release:
+    types: [published]
+  
+jobs:
+  api_request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send API Request via Discord Webhook
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_NOTIF_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          RELEASE_AUTHOR: ${{ github.actor }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          JSON_PAYLOAD=$(jq -n \
+            --arg tag "${RELEASE_TAG}" \
+            --arg name "${RELEASE_NAME}" \
+            --arg body "${RELEASE_BODY}" \
+            --arg url "${RELEASE_URL}" \
+            --arg author "${RELEASE_AUTHOR}" \
+            --arg repo_name "${REPO_NAME}" \
+            '{
+              content: ("⚡ Repository: **" + $repo_name + "**\n\n" +
+                        "👨🏻‍💻 Author: **" + $author + "**\n\n" +
+                        "🚀 New Release: **" + $tag + "**\n\n" +
+                        "📌 Title: **" + $name + "**\n\n" +
+                        "📑 Description:\n**" + $body + "**\n\n" +
+                        "🔗 View Release: **" + $url + "**")            
+            }') 
+
+          echo "JSON Payload:"
+          echo "$JSON_PAYLOAD"
+          
+          # Send the POST request with curl and capture the HTTP status code.
+          response=$(curl -s -o response.json -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD" \
+            "$DISCORD_WEBHOOK_URL")
+          
+          echo "HTTP Response Code: $response"
+          
+          if [ "$response" -ne 204 ]; then
+            echo "❌ Request failed with status code $response"
+            echo "Server response:"
+            cat response.json
+            exit 1  # Fail the GitHub Action if the response is not 204.
+          else
+            echo "✅ Request successful!"
+          fi
