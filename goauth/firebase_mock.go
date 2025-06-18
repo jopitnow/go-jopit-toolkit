@@ -12,7 +12,7 @@ type FirebaseAccountManagerMock struct {
 	HandleSetUserValidated       func(ctx context.Context, uid string, isVerified bool) apierrors.ApiError
 	HandleIsUserValidated        func(ctx context.Context, uid string) (bool, apierrors.ApiError)
 	HandleSetUserSubscribed      func(ctx context.Context, uid string, isSubscribed bool) apierrors.ApiError
-	HandleIsUserSubscribed       func(ctx context.Context, uid string) (bool, apierrors.ApiError)
+	HandleIsUserSubscribed       func(ctx context.Context, uid string) (*string, apierrors.ApiError)
 	HandleRemoveUserSubscription func(ctx context.Context, uid string) apierrors.ApiError
 	Spy                          bool
 }
