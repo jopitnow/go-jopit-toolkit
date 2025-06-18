@@ -66,13 +66,13 @@ func (mock *FirebaseAccountManagerMock) SetUserSubscribed(ctx context.Context, u
 	return nil
 }
 
-func (mock *FirebaseAccountManagerMock) IsUserSubscribed(ctx context.Context, uid string) (bool, apierrors.ApiError) {
+func (mock *FirebaseAccountManagerMock) IsUserSubscribed(ctx context.Context, uid string) (*string, apierrors.ApiError) {
 	mock.Spy = false
 	if mock.HandleIsUserSubscribed != nil {
 		mock.Spy = true
 		return mock.HandleIsUserSubscribed(ctx, uid)
 	}
-	return false, nil
+	return nil, nil
 }
 
 func (mock *FirebaseAccountManagerMock) RemoveUserSubscription(ctx context.Context, uid string) apierrors.ApiError {
