@@ -23,7 +23,7 @@ func InitMeterExporter(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
 
 	exporter, err := otlpmetrichttp.New(ctx,
-		otlpmetrichttp.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")+":4318/v1/metrics"),
+		otlpmetrichttp.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")+":4318"),
 		otlpmetrichttp.WithTimeout(10*time.Second),
 	)
 	if err != nil {
@@ -58,13 +58,6 @@ func InitMeterExporter(apiName string) (func(context.Context) error, error) {
 	otel.SetMeterProvider(mp)
 
 	meter = otel.Meter("jopit-api-" + apiName)
-
-	return mp.Shutdown, nil
-}
-
-var (
-	meter otelmetric.Meter = nil
-
 	totalReqs, _ = meter.Int64Counter(
 		"http.server.requests_total",
 		otelmetric.WithDescription("Total HTTP requests"),
@@ -73,6 +66,14 @@ var (
 		"http.server.errors_total",
 		otelmetric.WithDescription("Total HTTP 5xx responses"),
 	)
+
+	return mp.Shutdown, nil
+}
+
+var (
+	meter        otelmetric.Meter = otel.Meter("")
+	totalReqs, _                  = meter.Int64Counter("")
+	errorReqs, _                  = meter.Int64Counter("")
 )
 
 func MetricsMiddleware() gin.HandlerFunc {
