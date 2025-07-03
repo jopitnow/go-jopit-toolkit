@@ -19,7 +19,9 @@ import (
 func InitTracerExporter(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
 
-	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithTimeout(10*time.Second), otlptracehttp.WithEndpointURL("http://jopit-otel-exporter:4318/v1/traces"))
+	exporter, err := otlptracehttp.New(ctx,
+		otlptracehttp.WithTimeout(10*time.Second),
+		otlptracehttp.WithEndpointURL(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")))
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +34,7 @@ func InitTracerExporter(apiName string) (func(context.Context) error, error) {
 	// Optionally define a resource to add attributes like service.name.
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			attribute.String("service.name", apiName+"-api"),
+			attribute.String("service.name", "jopit-api-"+apiName),
 			attribute.String("service.version", version),
 			attribute.String("deployment.environment", env), //to-do
 		),

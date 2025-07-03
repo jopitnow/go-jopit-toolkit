@@ -17,6 +17,7 @@ import (
 	"github.com/jopitnow/go-jopit-toolkit/goauth"
 	"github.com/jopitnow/go-jopit-toolkit/goutils/apierrors"
 	"github.com/jopitnow/go-jopit-toolkit/goutils/logger"
+	"github.com/jopitnow/go-jopit-toolkit/telemetry"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -61,8 +62,11 @@ func CustomJopitRouter(conf JopitRouterConfig) *gin.Engine {
 	if !conf.DisableCommonApiFilter {
 		router.Use(CommonAPiFilter(!conf.DisableCommonApiFilterErrorLog))
 	}
+	if !conf.DisableMetrics {
+		router.Use(telemetry.MetricsMiddleware())
+	}
 	if !conf.DisableTracer {
-		router.Use(otelgin.Middleware(ApiName + "-service"))
+		router.Use(otelgin.Middleware("jopit-api-" + ApiName))
 	}
 	if !conf.DisableLogs {
 		router.Use(logger.LoggerGrafanaMiddleware())
@@ -92,6 +96,7 @@ type JopitRouterConfig struct {
 	DisableCORS                           bool
 	DisableTracer                         bool
 	DisableLogs                           bool
+	DisableMetrics                        bool
 }
 
 func noRouteHandler(c *gin.Context) {
