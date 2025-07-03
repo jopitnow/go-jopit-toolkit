@@ -23,7 +23,7 @@ func InitMeterExporter(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
 
 	exporter, err := otlpmetrichttp.New(ctx,
-		otlpmetrichttp.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),
+		otlpmetrichttp.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")+":4318/v1/metrics"),
 		otlpmetrichttp.WithTimeout(10*time.Second),
 	)
 	if err != nil {

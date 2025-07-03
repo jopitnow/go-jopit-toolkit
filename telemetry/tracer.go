@@ -21,7 +21,7 @@ func InitTracerExporter(apiName string) (func(context.Context) error, error) {
 
 	exporter, err := otlptracehttp.New(ctx,
 		otlptracehttp.WithTimeout(10*time.Second),
-		otlptracehttp.WithEndpointURL(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")))
+		otlptracehttp.WithEndpointURL(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"+":4318/v1/traces")))
 	if err != nil {
 		return nil, err
 	}
