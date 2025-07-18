@@ -7,6 +7,7 @@ import (
 )
 
 type FirebaseAccountManagerMock struct {
+	HandleDeleteUser             func(ctx context.Context) apierrors.ApiError
 	HandleVerificationEmail      func(ctx context.Context, userEmail string) (string, apierrors.ApiError)
 	HandleResetPassword          func(ctx context.Context, userEmail string) (string, apierrors.ApiError)
 	HandleSetUserValidated       func(ctx context.Context, uid string, isVerified bool) apierrors.ApiError
@@ -19,6 +20,15 @@ type FirebaseAccountManagerMock struct {
 
 func NewFirebaseAccountManagerMock() *FirebaseAccountManagerMock {
 	return &FirebaseAccountManagerMock{}
+}
+
+func (mock *FirebaseAccountManagerMock) DeleteUser(ctx context.Context) apierrors.ApiError {
+	mock.Spy = false
+	if mock.HandleDeleteUser != nil {
+		mock.Spy = true
+		return mock.HandleDeleteUser(ctx)
+	}
+	return nil
 }
 
 func (mock *FirebaseAccountManagerMock) VerificationEmail(ctx context.Context, userEmail string) (string, apierrors.ApiError) {

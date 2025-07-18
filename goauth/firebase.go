@@ -198,6 +198,7 @@ func NewFirebaseAccountManager() FirebaseAccountManager {
 }
 
 type FirebaseAccountManager interface {
+	DeleteUser(ctx context.Context) apierrors.ApiError
 	VerificationEmail(ctx context.Context, userEmail string) (string, apierrors.ApiError)
 	ResetPassword(ctx context.Context, userEmail string) (string, apierrors.ApiError)
 	SetUserValidated(ctx context.Context, uid string, isVerified bool) apierrors.ApiError
@@ -205,6 +206,20 @@ type FirebaseAccountManager interface {
 	IsUserSubscribed(ctx context.Context, uid string) (bool, *string, apierrors.ApiError)
 	SetUserSubscription(ctx context.Context, uid string, subscription string) apierrors.ApiError
 	RemoveUserSubscription(ctx context.Context, uid string) apierrors.ApiError
+}
+
+func (fam firebaseAccountManager) DeleteUser(ctx context.Context) apierrors.ApiError {
+	uid := ctx.Value(FirebaseUserID)
+	if uid == nil {
+		return apierrors.NewApiError("error retrieving uid from the context", "internal_server_error", http.StatusInternalServerError, apierrors.CauseList{})
+	}
+
+	err := fam.AuthClient.DeleteUser(ctx, uid.(string))
+	if err != nil {
+		return apierrors.NewApiError("error deleting user.", "internal_server_error", http.StatusInternalServerError, apierrors.CauseList{err})
+	}
+
+	return nil
 }
 
 func (fam firebaseAccountManager) VerificationEmail(ctx context.Context, userEmail string) (string, apierrors.ApiError) {
