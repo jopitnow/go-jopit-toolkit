@@ -19,7 +19,8 @@ import (
 func InitTracerExporter(apiName string) (func(context.Context) error, error) {
 	ctx := context.Background()
 
-	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithTimeout(10*time.Second), otlptracehttp.WithEndpointURL("http://jopit-otel-exporter:4318/v1/traces"))
+	exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithTimeout(10*time.Second),
+		otlptracehttp.WithEndpointURL("http://jopit-otel-exporter:4318/v1/traces"))
 	if err != nil {
 		return nil, err
 	}
