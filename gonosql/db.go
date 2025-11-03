@@ -59,55 +59,46 @@ func NewNoSQL(jopitDBConfig Config) *Data {
 	return data
 }
 
-func ParseMongoURI(uri string) (username, password, host, dbName string, err error) {
-	// Remove the mongodb+srv:// prefix
-	trimmed := strings.TrimPrefix(uri, "mongodb+srv://")
+func ParseMongoURI(uri string) (username, password, host string, err error) {
+    // Remove the mongodb+srv:// prefix
+    trimmed := strings.TrimPrefix(uri, "mongodb+srv://")
 
-	// Split at the first slash to separate credentials/host from db
-	parts := strings.SplitN(trimmed, "/", 2)
-	if len(parts) < 2 {
-		return "", "", "", "", fmt.Errorf("invalid URI format")
-	}
+    // Split at the first slash to separate credentials/host from db
+    parts := strings.SplitN(trimmed, "/", 2)
+    if len(parts) < 2 {
+        return "", "", "", fmt.Errorf("invalid URI format")
+    }
 
-	// Extract credentials and host
-	hostPart := parts[0]
-	atIndex := strings.LastIndex(hostPart, "@")
-	if atIndex == -1 {
-		return "", "", "", "", fmt.Errorf("missing '@' in URI")
-	}
+    // Extract credentials and host
+    hostPart := parts[0]
+    atIndex := strings.LastIndex(hostPart, "@")
+    if atIndex == -1 {
+        return "", "", "", fmt.Errorf("missing '@' in URI")
+    }
 
-	creds := hostPart[:atIndex]
-	host = hostPart[atIndex+1:]
+    creds := hostPart[:atIndex]
+    host = hostPart[atIndex+1:]
 
-	// Extract username and password
-	colonIndex := strings.Index(creds, ":")
-	if colonIndex == -1 {
-		username = creds
-	} else {
-		username = creds[:colonIndex]
-		password = creds[colonIndex+1:]
-	}
+    // Extract username and password
+    colonIndex := strings.Index(creds, ":")
+    if colonIndex == -1 {
+        username = creds
+    } else {
+        username = creds[:colonIndex]
+        password = creds[colonIndex+1:]
+    }
 
-	// Extract db name (before '?')
-	dbPart := parts[1]
-	dbName = dbPart
-	if qIndex := strings.Index(dbPart, "?"); qIndex != -1 {
-		dbName = dbPart[:qIndex]
-	}
+    // Decode in case of URL encoding
+    if decoded, err := url.QueryUnescape(username); err == nil {
+        username = decoded
+    }
+    if decoded, err := url.QueryUnescape(password); err == nil {
+        password = decoded
+    }
 
-	// Decode in case of URL encoding
-	if decoded, err := url.QueryUnescape(username); err == nil {
-		username = decoded
-	}
-	if decoded, err := url.QueryUnescape(password); err == nil {
-		password = decoded
-	}
-	if decoded, err := url.QueryUnescape(dbName); err == nil {
-		dbName = decoded
-	}
-
-	return username, password, host, dbName, nil
+    return username, password, host, nil
 }
+
 
 func GetConnection(jopitDBConfig Config) (*mongo.Client, error) {
 	host := jopitDBConfig.Host
