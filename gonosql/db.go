@@ -59,32 +59,33 @@ func NewNoSQL(jopitDBConfig Config) *Data {
 	return data
 }
 
-func ParseMongoURI(uri string) (username, host, dbName string, err error) {
+func parseMongoURI(uri string) (username, password, host, dbName string, err error) {
 	// Remove the mongodb+srv:// prefix
 	trimmed := strings.TrimPrefix(uri, "mongodb+srv://")
 
 	// Split at the first slash to separate credentials/host from db
 	parts := strings.SplitN(trimmed, "/", 2)
 	if len(parts) < 2 {
-		return "", "", "", fmt.Errorf("invalid URI format")
+		return "", "", "", "", fmt.Errorf("invalid URI format")
 	}
 
 	// Extract credentials and host
 	hostPart := parts[0]
 	atIndex := strings.LastIndex(hostPart, "@")
 	if atIndex == -1 {
-		return "", "", "", fmt.Errorf("missing '@' in URI")
+		return "", "", "", "", fmt.Errorf("missing '@' in URI")
 	}
 
 	creds := hostPart[:atIndex]
 	host = hostPart[atIndex+1:]
 
-	// Extract username (before ':')
+	// Extract username and password
 	colonIndex := strings.Index(creds, ":")
 	if colonIndex == -1 {
 		username = creds
 	} else {
 		username = creds[:colonIndex]
+		password = creds[colonIndex+1:]
 	}
 
 	// Extract db name (before '?')
@@ -98,11 +99,14 @@ func ParseMongoURI(uri string) (username, host, dbName string, err error) {
 	if decoded, err := url.QueryUnescape(username); err == nil {
 		username = decoded
 	}
+	if decoded, err := url.QueryUnescape(password); err == nil {
+		password = decoded
+	}
 	if decoded, err := url.QueryUnescape(dbName); err == nil {
 		dbName = decoded
 	}
 
-	return username, host, dbName, nil
+	return username, password, host, dbName, nil
 }
 
 func GetConnection(jopitDBConfig Config) (*mongo.Client, error) {
