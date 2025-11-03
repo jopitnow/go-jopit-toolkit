@@ -59,26 +59,35 @@ func NewNoSQL(jopitDBConfig Config) *Data {
 	return data
 }
 
-func ParseMongoURI(uri string) (host string, dbName string, err error) {
+func ParseMongoURI(uri string) (username, host, dbName string, err error) {
 	// Remove the mongodb+srv:// prefix
 	trimmed := strings.TrimPrefix(uri, "mongodb+srv://")
 
-	// Split at the first slash to separate host and db
+	// Split at the first slash to separate credentials/host from db
 	parts := strings.SplitN(trimmed, "/", 2)
 	if len(parts) < 2 {
-		return "", "", fmt.Errorf("invalid URI format")
+		return "", "", "", fmt.Errorf("invalid URI format")
 	}
 
-	// Extract host (before the slash)
+	// Extract credentials and host
 	hostPart := parts[0]
 	atIndex := strings.LastIndex(hostPart, "@")
-	if atIndex != -1 {
-		host = hostPart[atIndex+1:]
-	} else {
-		host = hostPart
+	if atIndex == -1 {
+		return "", "", "", fmt.Errorf("missing '@' in URI")
 	}
 
-	// Extract db name (before ? if present)
+	creds := hostPart[:atIndex]
+	host = hostPart[atIndex+1:]
+
+	// Extract username (before ':')
+	colonIndex := strings.Index(creds, ":")
+	if colonIndex == -1 {
+		username = creds
+	} else {
+		username = creds[:colonIndex]
+	}
+
+	// Extract db name (before '?')
 	dbPart := parts[1]
 	dbName = dbPart
 	if qIndex := strings.Index(dbPart, "?"); qIndex != -1 {
@@ -86,11 +95,14 @@ func ParseMongoURI(uri string) (host string, dbName string, err error) {
 	}
 
 	// Decode in case of URL encoding
+	if decoded, err := url.QueryUnescape(username); err == nil {
+		username = decoded
+	}
 	if decoded, err := url.QueryUnescape(dbName); err == nil {
 		dbName = decoded
 	}
 
-	return host, dbName, nil
+	return username, host, dbName, nil
 }
 
 func GetConnection(jopitDBConfig Config) (*mongo.Client, error) {
