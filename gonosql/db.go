@@ -59,7 +59,7 @@ func NewNoSQL(jopitDBConfig Config) *Data {
 	return data
 }
 
-func parseMongoURI(uri string) (username, password, host, dbName string, err error) {
+func ParseMongoURI(uri string) (username, password, host, dbName string, err error) {
 	// Remove the mongodb+srv:// prefix
 	trimmed := strings.TrimPrefix(uri, "mongodb+srv://")
 
