@@ -3,6 +3,8 @@ package gonosql
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -55,6 +57,40 @@ func NewNoSQL(jopitDBConfig Config) *Data {
 	})
 
 	return data
+}
+
+func ParseMongoURI(uri string) (host string, dbName string, err error) {
+	// Remove the mongodb+srv:// prefix
+	trimmed := strings.TrimPrefix(uri, "mongodb+srv://")
+
+	// Split at the first slash to separate host and db
+	parts := strings.SplitN(trimmed, "/", 2)
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("invalid URI format")
+	}
+
+	// Extract host (before the slash)
+	hostPart := parts[0]
+	atIndex := strings.LastIndex(hostPart, "@")
+	if atIndex != -1 {
+		host = hostPart[atIndex+1:]
+	} else {
+		host = hostPart
+	}
+
+	// Extract db name (before ? if present)
+	dbPart := parts[1]
+	dbName = dbPart
+	if qIndex := strings.Index(dbPart, "?"); qIndex != -1 {
+		dbName = dbPart[:qIndex]
+	}
+
+	// Decode in case of URL encoding
+	if decoded, err := url.QueryUnescape(dbName); err == nil {
+		dbName = decoded
+	}
+
+	return host, dbName, nil
 }
 
 func GetConnection(jopitDBConfig Config) (*mongo.Client, error) {
