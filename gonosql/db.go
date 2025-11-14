@@ -3,6 +3,7 @@ package gonosql
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/url"
 	"strings"
 	"sync"
@@ -51,15 +52,15 @@ func (d *Data) NewCollection(collection string) *mongo.Collection {
 	return d.Database.Collection(collection)
 }
 
-func NewNoSQL(jopitDBConfig Config) *Data {
+func NewNoSQL(mongoDbConnString string) *Data {
 	once.Do(func() {
-		InitNoSQL(jopitDBConfig)
+		InitNoSQL(mongoDbConnString)
 	})
 
 	return data
 }
 
-func ParseMongoURI(uri string) (username, password, host string, err error) {
+func parseMongoURI(uri string) (username, password, host string, err error) {
 	// Remove the mongodb+srv:// prefix
 	trimmed := strings.TrimPrefix(uri, "mongodb+srv://")
 
@@ -99,10 +100,7 @@ func ParseMongoURI(uri string) (username, password, host string, err error) {
 	return username, password, host, nil
 }
 
-func GetConnection(jopitDBConfig Config) (*mongo.Client, error) {
-	host := jopitDBConfig.Host
-	username := jopitDBConfig.Username
-	password := jopitDBConfig.Password
+func GetConnection(host, username, password string) (*mongo.Client, error) {
 
 	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
 	clientOpts := options.Client().
@@ -114,12 +112,18 @@ func GetConnection(jopitDBConfig Config) (*mongo.Client, error) {
 	return mongo.Connect(ctx, clientOpts)
 }
 
-func InitNoSQL(jopitDBConfig Config) {
+func InitNoSQL(mongoDbConnString string) {
 	var (
 		errDB    error
 		database *mongo.Database
 	)
-	db, err := GetConnection(jopitDBConfig)
+
+	username, password, host, err := parseMongoURI(mongoDbConnString)
+	if err != nil {
+		log.Fatalf("Error decoding the MongoDB Conn String: %s", err.Error())
+	}
+
+	db, err := GetConnection(host, username, password)
 	if err != nil {
 		errDB = fmt.Errorf("Error NoSQL connection: %s", err)
 	} else {
@@ -127,7 +131,7 @@ func InitNoSQL(jopitDBConfig Config) {
 		if err = db.Ping(context.TODO(), nil); err != nil {
 			errDB = fmt.Errorf("Error NoSQL connection: %s", err)
 		}
-		database = db.Database(jopitDBConfig.Database)
+		database = db.Database("jopit")
 	}
 
 	data = &Data{
